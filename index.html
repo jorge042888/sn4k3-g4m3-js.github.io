@@ -3,22 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Snake — Juego clásico</title>
+  <title>Snake - Juego clasico</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
   <div class="noise"></div>
   <main class="game-wrapper">
     <header class="game-header">
-      <h1 class="logo">Snake</h1>
+      <div class="brand">
+        <img id="game-logo" class="game-logo" src="assets/logo.ico" alt="" aria-hidden="true" decoding="async">
+        <h1 class="logo">Snake JS</h1>
+      </div>
       <div class="player-badge" id="player-badge" aria-hidden="true"></div>
       <div class="header-right">
-        <button id="stats-btn" class="btn btn-ghost" type="button" aria-label="Estadísticas">
+        <button id="stats-btn" class="btn btn-ghost" type="button" aria-label="Estadisticas">
           <span class="stats-icon" aria-hidden="true">📊</span>
-          Estadísticas
+          <span>Estadisticas</span>
         </button>
         <div class="scores">
           <div class="score-item">
@@ -26,7 +29,7 @@
             <span id="score" class="score-value">0</span>
           </div>
           <div class="score-item best">
-            <span class="score-label">Récord</span>
+            <span class="score-label">Record</span>
             <span id="high-score" class="score-value">0</span>
           </div>
         </div>
@@ -38,13 +41,13 @@
 
       <div id="start-screen" class="overlay overlay-visible">
         <div class="overlay-content">
-          <h2>¿Listo para jugar?</h2>
+          <h2>Listo para jugar?</h2>
           <label for="player-name" class="player-name-label">Tu nombre</label>
           <input type="text" id="player-name" class="player-name-input" placeholder="Escribe tu nombre" maxlength="30" autocomplete="off">
           <p class="best-player-line" id="best-player-line">
-            Mejor jugador: <span id="best-player-name">Aún sin registros</span>
+            Mejor jugador: <span id="best-player-name">Aun sin registros</span>
           </p>
-          <p class="start-hint">Usa las flechas o <kbd>W A S D</kbd> o desliza sobre el tablero en pantallas táctiles para mover la serpiente.</p>
+          <p class="start-hint">Usa flechas o <kbd>W A S D</kbd>. En movil puedes deslizar en el tablero o usar botones tactiles.</p>
           <button id="start-btn" class="btn btn-primary">Iniciar partida</button>
         </div>
       </div>
@@ -54,6 +57,10 @@
           <h2>Game Over</h2>
           <p class="player-result"><span id="game-over-player"></span></p>
           <p class="final-score">Puntos: <span id="final-score">0</span></p>
+          <div class="game-over-metrics">
+            <p>Circulos comidos: <span id="go-foods-eaten">0</span></p>
+            <p>Cuadros aleatorios: <span id="go-obstacles-count">0</span></p>
+          </div>
           <button id="restart-btn" class="btn btn-primary">Jugar de nuevo</button>
         </div>
       </div>
@@ -66,11 +73,23 @@
       </div>
     </div>
 
+    <div class="touch-controls" aria-label="Controles tactiles">
+      <div class="touch-row">
+        <button id="touch-up" class="btn-touch" type="button" aria-label="Mover arriba">&uarr;</button>
+      </div>
+      <div class="touch-row touch-row-middle">
+        <button id="touch-left" class="btn-touch" type="button" aria-label="Mover izquierda">&larr;</button>
+        <button id="touch-right" class="btn-touch" type="button" aria-label="Mover derecha">&rarr;</button>
+      </div>
+      <div class="touch-row">
+        <button id="touch-down" class="btn-touch" type="button" aria-label="Mover abajo">&darr;</button>
+      </div>
+    </div>
 
     <div id="stats-overlay" class="stats-overlay" aria-hidden="true">
       <div class="stats-panel">
         <div class="stats-header">
-          <h2 class="stats-title">Estadísticas</h2>
+          <h2 class="stats-title">Estadisticas</h2>
           <button id="stats-close" class="btn-close" type="button" aria-label="Cerrar">&times;</button>
         </div>
         <div class="stats-body">
@@ -81,11 +100,11 @@
             </div>
             <div class="kpi-card accent">
               <span class="kpi-value" id="stat-best-score">0</span>
-              <span class="kpi-label">Mejor puntuación</span>
+              <span class="kpi-label">Mejor puntuacion</span>
             </div>
             <div class="kpi-card">
               <span class="kpi-value" id="stat-avg-score">0</span>
-              <span class="kpi-label">Puntuación media</span>
+              <span class="kpi-label">Puntuacion media</span>
             </div>
             <div class="kpi-card">
               <span class="kpi-value" id="stat-total-points">0</span>
@@ -94,21 +113,21 @@
           </div>
           <div class="stats-charts hidden">
             <div class="chart-block">
-              <h3 class="chart-title">Puntuación por partida (últimas 20)</h3>
+              <h3 class="chart-title">Puntuacion por partida (ultimas 20)</h3>
               <div class="chart-wrap">
                 <canvas id="chart-scores" width="480" height="200"></canvas>
               </div>
             </div>
             <div class="chart-block">
-              <h3 class="chart-title">Duración por partida (min)</h3>
+              <h3 class="chart-title">Duracion por partida (min)</h3>
               <div class="chart-wrap">
                 <canvas id="chart-duration" width="480" height="160"></canvas>
               </div>
             </div>
           </div>
           <div class="stats-empty" id="stats-empty">
-            <p>Aún no hay partidas registradas.</p>
-            <p class="stats-empty-hint">Juega una partida para ver tus estadísticas aquí.</p>
+            <p>Aun no hay partidas registradas.</p>
+            <p class="stats-empty-hint">Juega una partida para ver tus estadisticas aqui.</p>
           </div>
         </div>
       </div>
@@ -122,11 +141,12 @@
         </div>
         <div class="stats-body rules-body">
           <ul class="rules-list">
-            <li>Mueve la serpiente con las flechas del teclado, <kbd>W A S D</kbd> o deslizando sobre el tablero en móviles.</li>
-            <li>Come los círculos rojos para sumar puntos y alargar la serpiente.</li>
-            <li>Evita chocar contra tu propio cuerpo.</li>
-            <li>Cada vez que comes aparece un bloque de color brillante en el tablero: si chocas contra uno, pierdes la partida.</li>
-            <li>Pulsa <kbd>Espacio</kbd> para pausar/reanudar y <kbd>Esc</kbd> para reiniciar la partida actual.</li>
+            <li>Mueve la serpiente con flechas, <kbd>W A S D</kbd>, botones tactiles o swipe en moviles.</li>
+            <li>Come los circulos rojos para sumar puntos y alargar la serpiente.</li>
+            <li>A veces aparece comida verde con indicador <strong>x1, x2 o x3</strong>: reduce la serpiente.</li>
+            <li>Evita chocar contra tu cuerpo.</li>
+            <li>Cada comida roja genera un bloque aleatorio; chocar con el bloque termina la partida.</li>
+            <li>Pulsa <kbd>Espacio</kbd> para pausar/reanudar y <kbd>Esc</kbd> para reiniciar.</li>
           </ul>
         </div>
       </div>
@@ -140,8 +160,8 @@
       <button id="rules-btn" class="btn-link" type="button">Reglas del juego</button>
     </footer>
   </main>
-  <script src="game.js"></script>
-  <script src="stats.js"></script>
+
+  <script src="js/game.js"></script>
+  <script src="js/stats.js"></script>
 </body>
 </html>
-

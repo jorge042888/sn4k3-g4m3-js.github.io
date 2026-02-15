@@ -2,50 +2,63 @@
 
 Todos los cambios notables del proyecto se documentan en este archivo.
 
-## Cambios realizados (última actualización)
+## Cambios realizados (ultima actualizacion)
 
-### 1. Documentación
+### 1. Documentacion base
 
-- **README.md**: descripción del proyecto, cómo ejecutar, controles, funcionalidades, estructura y enlaces a documentación.
-- **CHANGELOG.md**: este archivo; historial de cambios.
-- **SECURITY.md**: documento de seguridad y assurance (datos, privacidad, integridad, recursos externos).
+- Se agregaron y organizaron `README.md`, `CHANGELOG.md` y `SECURITY.md`.
 
-### 2. Gráficas de estadísticas
+### 2. Graficas de estadisticas
 
-- **Números en las barras**: cada barra muestra su valor (puntuación o duración en min) encima o sobre la barra, para no depender solo de los ejes.
-- **Línea de tendencia**: en ambas gráficas (puntuación por partida y duración por partida) se dibuja una línea de tendencia por regresión lineal (trazo discontinuo en rojo), para visualizar la tendencia de rendimiento.
+- Se anadieron numeros visibles sobre barras.
+- Se incorporo linea de tendencia por regresion lineal en puntuacion y duracion.
 
-### 3. Obstáculos / muros
+### 3. Obstaculos / muros
 
-- Al recoger cada comida (círculo), se genera **un obstáculo** de **1×1 celda** en una posición aleatoria del grid.
-- Los obstáculos no se superponen con la serpiente, la comida ni otros obstáculos.
-- Si la serpiente choca con un obstáculo, la partida termina (Game Over).
-- Los obstáculos se dibujan ahora en tonos brillantes basados en **#EB8DFC** con resplandor para que resalten mejor sobre el tablero; se reinician al iniciar una nueva partida.
+- Cada comida roja genera un obstaculo aleatorio de `1x1`.
+- Colisionar con obstaculo termina la partida.
+- Se mejoro el estilo visual de obstaculos con brillo en tonos `#EB8DFC`.
 
-### 4. Nombre de usuario al iniciar partida
+### 4. Nombre de usuario en partida
 
-- En la pantalla de inicio se muestra un campo **"Tu nombre"** (obligatorio para empezar; si está vacío se usa "Jugador").
-- El nombre se muestra en el header durante la partida (badge junto al logo) y en la pantalla de Game Over ("Nombre, Puntos: X").
-- El nombre se guarda en cada partida en el historial de estadísticas (campo `playerName` en `localStorage`).
+- Se solicita nombre al iniciar.
+- Se muestra nombre en header y en `Game Over`.
+- Se guarda en historial de partidas (`playerName`).
 
-### 5. Color de la serpiente
+### 5. Ajustes visuales de serpiente y efectos
 
-- Color base **#38CDEB** (cyan) con gradientes de contraste:
-  - Claros: **#5dd4f0**
-  - Base: **#38CDEB**
-  - Oscuro: **#2ab8d4**
-- La cuadrícula del canvas y los efectos al recoger comida (anillos, partículas, flash) usan tonos cyan coherentes (**rgba(56, 205, 235, …)**) en lugar del verde anterior.
+- Color base de serpiente en cyan (`#38CDEB`) con gradientes.
+- Efectos de recoleccion actualizados a la misma paleta.
 
-### 6. Mejor jugador y reglas
+### 6. Mejor jugador y ventana de reglas
 
-- Cálculo del **mejor jugador** a partir del historial (`snake-game-stats`), mostrando su nombre en la pantalla de inicio y usando ese nombre como valor por defecto en el campo de entrada.
-- Añadida una **ventana de reglas** accesible desde el pie de página, que explica controles, objetivo, comportamiento de los bloques y teclas de pausa/reinicio.
+- Se calcula mejor jugador desde `snake-game-stats`.
+- Se anadio modal de reglas desde el footer.
 
-### 7. Controles táctiles en móvil
+### 7. Control movil por swipe
 
-- Inicialmente se incorporaron **controles táctiles** (flechas virtuales) bajo el tablero para facilitar el juego en dispositivos móviles.
-- Posteriormente se reemplazaron por **gestos táctiles (swipe)** sobre el propio tablero, eliminando los botones físicos para una experiencia más cómoda en pantallas pequeñas.
+- Se migro de flechas moviles iniciales a gesto swipe sobre el tablero.
+
+### 8. Estabilidad y UX de overlays
+
+- `Escape` no reinicia si hay overlays abiertos.
+- `spawnFood()` usa intentos acotados + fallback para evitar loops infinitos.
+- Al abrir estadisticas se pausa la partida y se reanuda al cerrar si aplica.
+
+### 9. Nuevas mecanicas y UI (implementacion actual)
+
+- Se agrego comida verde aleatoria (`20%`) con indicador `x1/x2/x3`.
+- La comida verde reduce la serpiente (sin bajar del minimo), no suma puntos y no genera obstaculos.
+- Se agrego animacion de reduccion con disolucion de segmentos y texto flotante `-N`.
+- Se anadieron contadores de partida en `Game Over`:
+  - Circulos comidos (rojos + verdes).
+  - Cuadros aleatorios generados.
+- En movil ahora conviven ambos controles:
+  - Swipe sobre canvas.
+  - Botones tactiles `arriba/abajo/izquierda/derecha`.
+- Se agrego soporte de logo configurable junto a `Snake JS` (`assets/logo.ico`) con fallback seguro si falta el archivo.
+- Se actualizaron `README.md` y comentarios en bloques complejos de `js/game.js`.
 
 ---
 
-*Para más detalle sobre seguridad y datos, ver [SECURITY.md](SECURITY.md).*
+Para mas detalle sobre seguridad y datos, ver [SECURITY.md](SECURITY.md).
