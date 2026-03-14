@@ -7,6 +7,7 @@
   'use strict';
 
   const GAME_STATS_KEY = 'snake-game-stats';
+  const HIGH_SCORE_KEY = 'snake-high-score';
   const CHART_SCORES_ID = 'chart-scores';
   const CHART_DURATION_ID = 'chart-duration';
   const LAST_N_SCORES = 20;
@@ -25,6 +26,7 @@
   const overlay = document.getElementById('stats-overlay');
   const statsBtn = document.getElementById('stats-btn');
   const statsClose = document.getElementById('stats-close');
+  const statsReset = document.getElementById('stats-reset');
   const statTotalGames = document.getElementById('stat-total-games');
   const statBestScore = document.getElementById('stat-best-score');
   const statAvgScore = document.getElementById('stat-avg-score');
@@ -67,6 +69,21 @@
       controls.resume();
     }
     pausedByStats = false;
+  }
+
+  function resetStats() {
+    const shouldReset = window.confirm('Se borraran el historial y el record guardados. Esta accion no se puede deshacer.');
+    if (!shouldReset) return;
+
+    localStorage.removeItem(GAME_STATS_KEY);
+    localStorage.removeItem(HIGH_SCORE_KEY);
+
+    renderStats();
+
+    const controls = window.snakeGameControls;
+    if (controls && controls.syncPersistedState) {
+      controls.syncPersistedState();
+    }
   }
 
   function renderStats() {
@@ -313,6 +330,9 @@
 
   statsBtn.addEventListener('click', openStats);
   statsClose.addEventListener('click', closeStats);
+  if (statsReset) {
+    statsReset.addEventListener('click', resetStats);
+  }
   overlay.addEventListener('click', function (e) {
     if (e.target === overlay) closeStats();
   });

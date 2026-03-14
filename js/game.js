@@ -100,6 +100,96 @@
 
   highScoreEl.textContent = highScore;
 
+  function getStoredHighScore() {
+    const parsed = parseInt(localStorage.getItem(HIGH_SCORE_KEY) || '0', 10);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  function getStoredStats() {
+    try {
+      const raw = localStorage.getItem(GAME_STATS_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function isEditableTarget(target) {
+    if (!(target instanceof HTMLElement)) return false;
+    if (target.isContentEditable) return true;
+    const editable = target.closest('input, textarea, select, [contenteditable="true"]');
+    return !!editable;
+  }
+
+  function abbreviatePlayerName(name) {
+    const normalized = (name || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9\s]/g, ' ')
+      .trim()
+      .toUpperCase();
+
+    if (!normalized) return 'JUG';
+
+    const parts = normalized.split(/\s+/).filter(Boolean);
+    if (parts.length > 1) {
+      const initials = parts.map((part) => part[0]).join('');
+      if (initials.length >= 3) return initials.slice(0, 3);
+
+      const firstWord = parts[0];
+      let compact = initials;
+      for (const ch of firstWord.slice(1)) {
+        if (compact.length >= 3) break;
+        compact += ch;
+      }
+      return compact.slice(0, 3);
+    }
+
+    const base = parts[0];
+    if (base.length <= 3) return base;
+
+    const middleConsonants = base.slice(1, -1).replace(/[AEIOU]/g, '');
+    let compact = base[0] + middleConsonants;
+
+    if (compact.length >= 3) {
+      return compact.slice(0, 3);
+    }
+
+    compact += base[base.length - 1];
+    if (compact.length >= 3) {
+      return compact.slice(0, 3);
+    }
+
+    for (const ch of base.slice(1)) {
+      if (compact.length >= 3) break;
+      compact += ch;
+    }
+
+    return compact.slice(0, 3);
+  }
+
+  function collapsePlayerBadge() {
+    if (!playerBadge) return;
+    playerBadge.classList.remove('is-expanded');
+    playerBadge.setAttribute('aria-expanded', 'false');
+  }
+
+  function setPlayerBadgeName(name) {
+    if (!playerBadge) return;
+
+    const fullName = (name || 'Jugador').trim().slice(0, 30);
+    const abbreviatedName = abbreviatePlayerName(fullName);
+
+    playerBadge.textContent = abbreviatedName;
+    playerBadge.dataset.fullName = fullName;
+    playerBadge.setAttribute('aria-label', `Jugador actual: ${fullName}`);
+    playerBadge.setAttribute('aria-expanded', 'false');
+    playerBadge.setAttribute('role', 'button');
+    playerBadge.setAttribute('tabindex', '0');
+    playerBadge.removeAttribute('aria-hidden');
+    collapsePlayerBadge();
+  }
+
   function randomCell() {
     return {
       x: Math.floor(Math.random() * GRID_SIZE),
@@ -554,13 +644,13 @@
   function startGame() {
     const inputName = (playerNameInput && playerNameInput.value && playerNameInput.value.trim()) || 'Jugador';
     playerName = inputName.trim().slice(0, 30);
-    if (playerNameInput) playerNameInput.value = playerName;
+    if (playerNameInput) {
+      playerNameInput.value = playerName;
+      delete playerNameInput.dataset.prefilledByBest;
+    }
 
     startScreen.classList.remove('overlay-visible');
-    if (playerBadge) {
-      playerBadge.textContent = playerName;
-      playerBadge.removeAttribute('aria-hidden');
-    }
+    setPlayerBadgeName(playerName);
 
     initGame();
     draw();
@@ -571,17 +661,14 @@
 
   function updateBestPlayerFromStats() {
     if (!bestPlayerNameEl) return;
-
-    let stats = [];
-    try {
-      const raw = localStorage.getItem(GAME_STATS_KEY);
-      if (raw) stats = JSON.parse(raw);
-    } catch (_) {
-      stats = [];
-    }
+    const stats = getStoredStats();
 
     if (!stats.length) {
       bestPlayerNameEl.textContent = 'Aun sin registros';
+      if (playerNameInput && playerNameInput.dataset.prefilledByBest === 'true') {
+        playerNameInput.value = '';
+        delete playerNameInput.dataset.prefilledByBest;
+      }
       return;
     }
 
@@ -594,8 +681,9 @@
 
     const name = (best.playerName || 'Jugador').toString().slice(0, 30);
     bestPlayerNameEl.textContent = name;
-    if (playerNameInput && !playerNameInput.value) {
+    if (playerNameInput && !playerNameInput.value.trim()) {
       playerNameInput.value = name;
+      playerNameInput.dataset.prefilledByBest = 'true';
     }
   }
 
@@ -662,6 +750,7 @@
   }
 
   function handleKeydown(e) {
+    if (isEditableTarget(e.target)) return;
     if (e.repeat) return;
     const blockingOverlayOpen = hasBlockingOverlayOpen();
 
@@ -789,6 +878,40 @@
     });
   }
 
+  if (playerNameInput) {
+    playerNameInput.addEventListener('input', function () {
+      delete playerNameInput.dataset.prefilledByBest;
+    });
+  }
+
+  if (playerBadge) {
+    playerBadge.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      const nextExpanded = !playerBadge.classList.contains('is-expanded');
+      playerBadge.classList.toggle('is-expanded', nextExpanded);
+      playerBadge.setAttribute('aria-expanded', nextExpanded ? 'true' : 'false');
+    });
+
+    playerBadge.addEventListener('keydown', function (e) {
+      if (e.code === 'Enter' || e.code === 'Space') {
+        e.preventDefault();
+        e.stopPropagation();
+        const nextExpanded = !playerBadge.classList.contains('is-expanded');
+        playerBadge.classList.toggle('is-expanded', nextExpanded);
+        playerBadge.setAttribute('aria-expanded', nextExpanded ? 'true' : 'false');
+      } else if (e.code === 'Escape') {
+        collapsePlayerBadge();
+      }
+    });
+  }
+
+  document.addEventListener('click', function (e) {
+    if (!playerBadge || playerBadge.getAttribute('aria-hidden') === 'true') return;
+    if (playerBadge.contains(e.target)) return;
+    collapsePlayerBadge();
+  });
+
   startBtn.addEventListener('click', startGame);
   restartBtn.addEventListener('click', restart);
   document.addEventListener('keydown', handleKeydown);
@@ -832,6 +955,12 @@
     },
     resume: function () {
       return setPaused(false);
+    },
+    syncPersistedState: function () {
+      highScore = getStoredHighScore();
+      highScoreEl.textContent = String(highScore);
+      updateBestPlayerFromStats();
+      collapsePlayerBadge();
     },
   };
 

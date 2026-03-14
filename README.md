@@ -1,6 +1,6 @@
 # Snake - Juego clasico
 
-Juego de la serpiente en JavaScript (Canvas), con obstaculos dinamicos, estadisticas y menu de usuario.
+Juego de la serpiente en JavaScript (Canvas), con obstaculos dinamicos, estadisticas, nombre de jugador y menu de usuario.
 
 ## Como ejecutar
 
@@ -24,7 +24,9 @@ En movil:
 
 ## Funcionalidades
 
-- **Nombre de usuario**: al iniciar partida se solicita el nombre; se muestra en el header y en la pantalla de Game Over. Por defecto: `Jugador`.
+- **Nombre de usuario**: al iniciar partida se solicita el nombre. Se muestra en `Game Over` y en el header como badge abreviado de 3 letras; al pasar el cursor o tocar el badge se revela el nombre completo. Por defecto: `Jugador`.
+- **Input corregido**: el campo de nombre permite escribir normalmente letras como `A`, `W`, `S` y `D` sin disparar controles del juego mientras el foco esta en edicion.
+- **Campo alineado a la UI**: el texto del input de nombre usa la paleta verde principal del juego.
 - **Comida roja (normal)**: suma `+10` puntos y hace crecer la serpiente.
 - **Obstaculos**: cada vez que la serpiente come una comida roja, aparece un muro aleatorio de `1x1` celda en color brillante. Chocar con un muro termina la partida.
 - **Comida verde (shrink)**: aparece aleatoriamente (`20%` de probabilidad por spawn), muestra indicador `x1`, `x2` o `x3`, y reduce la longitud de la serpiente segun ese valor (sin bajar del minimo jugable).
@@ -33,10 +35,11 @@ En movil:
   - `Circulos comidos` (rojos + verdes).
   - `Cuadros aleatorios` generados en la partida.
 - **Estadisticas**: boton `Estadisticas` en el header. Muestra partidas jugadas, mejor puntuacion, puntuacion media, total de puntos, y dos graficas (puntuacion y duracion por partida) con numeros en barras y linea de tendencia.
+- **Reset de estadisticas**: el modal permite reiniciar historial y record guardados con confirmacion previa.
 - **Persistencia**: record e historial de partidas (ultimas 100) en `localStorage`; cada partida guarda puntuacion, nombre, fecha y duracion.
 - **Mejor jugador**: en la pantalla de inicio se muestra automaticamente el nombre del jugador con mayor puntuacion registrada y se pre-rellena el campo de nombre con ese valor.
 - **Ventana de reglas**: boton `Reglas del juego` en el pie de pagina.
-- **Logo configurable**: junto al texto `Snake JS` se puede cargar un logo desde `assets/logo.ico`. Si el archivo no existe, el logo se oculta automaticamente.
+- **Logo configurable**: junto al texto `Snake JS` se puede cargar un logo desde `imagenes/Snake.ico`. Si el archivo no existe, el logo se oculta automaticamente.
 
 ## Estructura del proyecto
 
@@ -45,11 +48,11 @@ snake-game-js/
 |-- index.html
 |-- css/
 |   `-- styles.css
+|-- imagenes/
+|   `-- Snake.ico
 |-- js/
 |   |-- game.js
 |   `-- stats.js
-|-- assets/
-|   `-- .gitkeep
 |-- README.md
 |-- CHANGELOG.md
 `-- SECURITY.md

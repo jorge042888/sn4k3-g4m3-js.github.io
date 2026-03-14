@@ -45,7 +45,7 @@ Todos los cambios notables del proyecto se documentan en este archivo.
 - `spawnFood()` usa intentos acotados + fallback para evitar loops infinitos.
 - Al abrir estadisticas se pausa la partida y se reanuda al cerrar si aplica.
 
-### 9. Nuevas mecanicas y UI (implementacion actual)
+### 9. Nuevas mecanicas y UI
 
 - Se agrego comida verde aleatoria (`20%`) con indicador `x1/x2/x3`.
 - La comida verde reduce la serpiente (sin bajar del minimo), no suma puntos y no genera obstaculos.
@@ -56,8 +56,16 @@ Todos los cambios notables del proyecto se documentan en este archivo.
 - En movil ahora conviven ambos controles:
   - Swipe sobre canvas.
   - Botones tactiles `arriba/abajo/izquierda/derecha`.
-- Se agrego soporte de logo configurable junto a `Snake JS` (`assets/logo.ico`) con fallback seguro si falta el archivo.
-- Se actualizaron `README.md` y comentarios en bloques complejos de `js/game.js`.
+
+### 10. Ajustes recientes de UX, estado y branding
+
+- El nombre del jugador en header se reemplazo por un badge abreviado de 3 letras para evitar colapsos visuales.
+- El badge del jugador ahora revela el nombre completo al pasar el cursor en PC o al tocar/click en pantallas tactiles.
+- El input de nombre ya no bloquea letras `A`, `W`, `S` ni `D`; los atajos del juego se ignoran mientras el foco esta en un campo editable.
+- El texto del input de nombre se alineo con la paleta verde principal del juego.
+- El modal de estadisticas ahora permite resetear historial y record mediante confirmacion.
+- El logo activo del proyecto se documento desde `imagenes/Snake.ico`.
+- Se actualizo la documentacion (`README.md`, `CHANGELOG.md` y `SECURITY.md`) para reflejar el estado real de la app.
 
 ---
 
