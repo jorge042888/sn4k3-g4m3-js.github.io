@@ -23,6 +23,12 @@
   const GAME_STATS_KEY = 'snake-game-stats';
   const MAX_STORED_GAMES = 100;
   const OBSTACLE_CELLS_PER_FOOD = 1;
+  const SOUND_FILES = {
+    normalFood: 'audio/comida_roja.mp3',
+    shrinkFood: 'audio/comida_verde.mp3',
+    gameOver: 'audio/game_over.mp3',
+    pause: 'audio/pause.mp3',
+  };
 
   const Direction = {
     UP: { dx: 0, dy: -1 },
@@ -97,6 +103,7 @@
 
   let collectEffects = [];
   let shrinkEffects = [];
+  let audioUnlocked = false;
 
   highScoreEl.textContent = highScore;
 
@@ -188,6 +195,21 @@
     playerBadge.setAttribute('tabindex', '0');
     playerBadge.removeAttribute('aria-hidden');
     collapsePlayerBadge();
+  }
+
+  function unlockAudio() {
+    audioUnlocked = true;
+  }
+
+  function playSoundEffect(soundKey) {
+    if (!audioUnlocked) return;
+
+    const src = SOUND_FILES[soundKey];
+    if (!src) return;
+
+    const sound = new Audio(src);
+    sound.preload = 'auto';
+    sound.play().catch(function () {});
   }
 
   function randomCell() {
@@ -597,6 +619,7 @@
       triggerCollectEffect(cx, cy);
 
       if (food.type === 'shrink') {
+        playSoundEffect('shrinkFood');
         const shrinkBy = food.multiplier || 1;
         const removable = Math.max(0, snake.length - MIN_SNAKE_LENGTH);
         const removedCount = Math.min(shrinkBy, removable);
@@ -609,6 +632,7 @@
         }
         triggerShrinkEffect(removedSegments, removedCount);
       } else {
+        playSoundEffect('normalFood');
         score += 10;
         scoreEl.textContent = score;
         obstaclesGeneratedCount += spawnObstacle();
@@ -719,6 +743,7 @@
       gameLoopId = null;
     }
 
+    playSoundEffect('gameOver');
     saveGameStats();
     finalScoreEl.textContent = score;
     if (goFoodsEatenEl) goFoodsEatenEl.textContent = String(foodsEatenCount);
@@ -737,6 +762,7 @@
     if (isPaused === nextPaused) return false;
 
     isPaused = nextPaused;
+    if (isPaused) playSoundEffect('pause');
     pauseOverlay.classList.toggle('overlay-visible', isPaused);
     if (!isPaused) {
       lastTick = performance.now();
@@ -879,6 +905,7 @@
   }
 
   if (playerNameInput) {
+    playerNameInput.addEventListener('focus', unlockAudio);
     playerNameInput.addEventListener('input', function () {
       delete playerNameInput.dataset.prefilledByBest;
     });
@@ -912,9 +939,16 @@
     collapsePlayerBadge();
   });
 
-  startBtn.addEventListener('click', startGame);
-  restartBtn.addEventListener('click', restart);
+  startBtn.addEventListener('click', function () {
+    unlockAudio();
+    startGame();
+  });
+  restartBtn.addEventListener('click', function () {
+    unlockAudio();
+    restart();
+  });
   document.addEventListener('keydown', handleKeydown);
+  document.addEventListener('pointerdown', unlockAudio, { passive: true });
 
   canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
   canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
