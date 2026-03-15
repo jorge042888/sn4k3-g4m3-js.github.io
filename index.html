@@ -3,19 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Snake - Juego clasico</title>
+  <title>Sn4k3 G4m3</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
+  <div class="bg-video-shell" aria-hidden="true">
+    <video id="bg-video" class="bg-video" autoplay muted loop playsinline preload="auto">
+      <source src="Video/verde_BGV.mp4" type="video/mp4">
+    </video>
+    <div class="bg-video-overlay"></div>
+  </div>
   <div class="noise"></div>
   <main class="game-wrapper">
     <header class="game-header">
       <div class="brand">
         <img id="game-logo" class="game-logo" src="imagenes/Snake.ico" alt="" aria-hidden="true" decoding="async">
-        <h1 class="logo">Snake JS</h1>
+        <h1 class="logo">Sn4k3 G4m3</h1>
       </div>
       <div class="player-badge" id="player-badge" aria-hidden="true"></div>
       <div class="header-right">
@@ -58,8 +64,8 @@
           <p class="player-result"><span id="game-over-player"></span></p>
           <p class="final-score">Puntos: <span id="final-score">0</span></p>
           <div class="game-over-metrics">
-            <p>Circulos comidos: <span id="go-foods-eaten">0</span></p>
-            <p>Cuadros aleatorios: <span id="go-obstacles-count">0</span></p>
+            <p>Comiste: <span id="go-foods-eaten">0</span></p>
+            <p>Obstaculos: <span id="go-obstacles-count">0</span></p>
           </div>
           <button id="restart-btn" class="btn btn-primary">Jugar de nuevo</button>
         </div>
@@ -74,15 +80,11 @@
     </div>
 
     <div class="touch-controls" aria-label="Controles tactiles">
-      <div class="touch-row">
-        <button id="touch-up" class="btn-touch" type="button" aria-label="Mover arriba">&uarr;</button>
-      </div>
-      <div class="touch-row touch-row-middle">
-        <button id="touch-left" class="btn-touch" type="button" aria-label="Mover izquierda">&larr;</button>
-        <button id="touch-right" class="btn-touch" type="button" aria-label="Mover derecha">&rarr;</button>
-      </div>
-      <div class="touch-row">
-        <button id="touch-down" class="btn-touch" type="button" aria-label="Mover abajo">&darr;</button>
+      <div class="touch-pad">
+        <button id="touch-up" class="btn-touch" type="button" aria-label="Mover arriba"><span class="touch-arrow">&uarr;</span></button>
+        <button id="touch-left" class="btn-touch" type="button" aria-label="Mover izquierda"><span class="touch-arrow">&larr;</span></button>
+        <button id="touch-right" class="btn-touch" type="button" aria-label="Mover derecha"><span class="touch-arrow">&rarr;</span></button>
+        <button id="touch-down" class="btn-touch" type="button" aria-label="Mover abajo"><span class="touch-arrow">&darr;</span></button>
       </div>
     </div>
 

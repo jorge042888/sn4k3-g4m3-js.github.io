@@ -55,6 +55,7 @@
   const goFoodsEatenEl = document.getElementById('go-foods-eaten');
   const goObstaclesCountEl = document.getElementById('go-obstacles-count');
   const gameLogoEl = document.getElementById('game-logo');
+  const bgVideoEl = document.getElementById('bg-video');
 
   const startScreen = document.getElementById('start-screen');
   const gameOverScreen = document.getElementById('game-over-screen');
@@ -384,23 +385,46 @@
       const inset = 2;
       const w = CELL_SIZE - inset * 2;
       const h = CELL_SIZE - inset * 2;
+      const left = x + inset;
+      const top = y + inset;
 
-      const grad = ctx.createLinearGradient(x, y, x + CELL_SIZE, y + CELL_SIZE);
-      grad.addColorStop(0, '#EB8DFC');
-      grad.addColorStop(0.5, '#f4b4ff');
-      grad.addColorStop(1, '#c05ae3');
-
-      ctx.fillStyle = grad;
-      ctx.shadowColor = 'rgba(235, 141, 252, 0.7)';
-      ctx.shadowBlur = 12;
-      ctx.beginPath();
-      ctx.rect(x + inset, y + inset, w, h);
-      ctx.fill();
+      ctx.save();
+      ctx.fillStyle = '#151a1f';
+      ctx.shadowColor = 'rgba(255, 176, 67, 0.42)';
+      ctx.shadowBlur = 16;
+      ctx.fillRect(left, top, w, h);
       ctx.shadowBlur = 0;
 
-      ctx.strokeStyle = 'rgba(235, 141, 252, 0.9)';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(x + inset + 0.5, y + inset + 0.5, w - 1, h - 1);
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(left, top, w, h);
+      ctx.clip();
+
+      for (let stripe = -h; stripe < w + h; stripe += 7) {
+        ctx.strokeStyle = stripe % 14 === 0 ? 'rgba(255, 190, 79, 0.92)' : 'rgba(41, 32, 18, 0.96)';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(left + stripe, top);
+        ctx.lineTo(left + stripe + h, top + h);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+
+      ctx.strokeStyle = 'rgba(255, 214, 127, 0.95)';
+      ctx.lineWidth = 1.3;
+      ctx.strokeRect(left + 0.5, top + 0.5, w - 1, h - 1);
+
+      ctx.strokeStyle = 'rgba(255, 88, 88, 0.88)';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.moveTo(left + 4, top + 4);
+      ctx.lineTo(left + w - 4, top + h - 4);
+      ctx.moveTo(left + w - 4, top + 4);
+      ctx.lineTo(left + 4, top + h - 4);
+      ctx.stroke();
+
+      ctx.restore();
     });
   }
 
@@ -905,6 +929,22 @@
     gameLogoEl.addEventListener('error', function () {
       gameLogoEl.style.display = 'none';
     });
+  }
+
+  if (bgVideoEl) {
+    bgVideoEl.muted = true;
+    bgVideoEl.defaultMuted = true;
+
+    const tryPlayBackgroundVideo = function () {
+      bgVideoEl.play().catch(function () {});
+    };
+
+    bgVideoEl.addEventListener('loadeddata', tryPlayBackgroundVideo);
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) tryPlayBackgroundVideo();
+    });
+    document.addEventListener('pointerdown', tryPlayBackgroundVideo, { passive: true });
+    tryPlayBackgroundVideo();
   }
 
   if (playerNameInput) {
