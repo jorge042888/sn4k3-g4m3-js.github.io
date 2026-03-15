@@ -47,6 +47,7 @@
   function openStats() {
     const controls = window.snakeGameControls;
     pausedByStats = false;
+    // Si la partida estaba corriendo, el modal la pausa y recuerda que debe reanudarla al cerrar.
     if (controls && controls.isRunning && controls.isPaused && controls.pause) {
       const isRunning = controls.isRunning();
       const isPaused = controls.isPaused();
@@ -80,6 +81,7 @@
 
     renderStats();
 
+    // Relee record y mejor jugador desde game.js para no depender de recargar la pagina.
     const controls = window.snakeGameControls;
     if (controls && controls.syncPersistedState) {
       controls.syncPersistedState();

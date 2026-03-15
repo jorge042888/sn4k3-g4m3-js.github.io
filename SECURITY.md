@@ -42,6 +42,7 @@ Este documento describe las practicas de seguridad y assurance del proyecto **Sn
 ## Recursos externos
 
 - **Google Fonts** (fuentes): se cargan por HTTPS desde `fonts.googleapis.com` y `fonts.gstatic.com`. Son hojas de estilo y fuentes; no tienen capacidad de ejecutar codigo en esta aplicacion.
+- **Audio local**: los efectos de sonido se cargan desde archivos del proyecto bajo `audio/`, sin streaming ni dependencias remotas.
 - **Logo local**: el icono del juego se carga desde un archivo local del proyecto (`imagenes/Snake.ico`), sin dependencias remotas adicionales.
 
 ## Recomendaciones para el usuario

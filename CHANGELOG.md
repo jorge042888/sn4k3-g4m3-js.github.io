@@ -67,6 +67,13 @@ Todos los cambios notables del proyecto se documentan en este archivo.
 - El logo activo del proyecto se documento desde `imagenes/Snake.ico`.
 - Se actualizo la documentacion (`README.md`, `CHANGELOG.md` y `SECURITY.md`) para reflejar el estado real de la app.
 
+### 11. Audio y limpieza de version final
+
+- Se agrego soporte de efectos de sonido locales desde `audio/` para comida roja, comida verde, pausa y `game over`.
+- Se comento la logica principal de `js/game.js` y `js/stats.js` en los bloques de flujo menos evidentes.
+- Se eliminaron de la version final los archivos redundantes de la raiz (`game.js`, `stats.js`, `styles.css`).
+- La estructura documentada ahora refleja solo los archivos activos que carga `index.html`.
+
 ---
 
 Para mas detalle sobre seguridad y datos, ver [SECURITY.md](SECURITY.md).

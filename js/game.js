@@ -197,10 +197,12 @@
     collapsePlayerBadge();
   }
 
+  // Los navegadores bloquean audio sin interaccion previa; esta marca habilita los SFX despues del primer gesto.
   function unlockAudio() {
     audioUnlocked = true;
   }
 
+  // Se crea una instancia corta por reproduccion para permitir sonidos consecutivos sin pelear por currentTime.
   function playSoundEffect(soundKey) {
     if (!audioUnlocked) return;
 
@@ -705,6 +707,7 @@
 
     const name = (best.playerName || 'Jugador').toString().slice(0, 30);
     bestPlayerNameEl.textContent = name;
+    // Solo reinyecta el nombre si el campo estaba vacio; no pisa lo que el usuario ya escribio.
     if (playerNameInput && !playerNameInput.value.trim()) {
       playerNameInput.value = name;
       playerNameInput.dataset.prefilledByBest = 'true';
@@ -990,6 +993,7 @@
     resume: function () {
       return setPaused(false);
     },
+    // Permite que otros modulos, como estadisticas, sincronicen UI y memoria con localStorage tras un reset.
     syncPersistedState: function () {
       highScore = getStoredHighScore();
       highScoreEl.textContent = String(highScore);
