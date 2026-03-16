@@ -10,14 +10,14 @@
   const CELL_SIZE = 20;
   const CANVAS_SIZE = GRID_SIZE * CELL_SIZE;
 
-  // Velocidad adaptativa: a mayor score el tick se reduce
+  // Velocidad adaptativa: sube un nivel cada 5 comidas rojas (50 pts)
   const SPEED_TIERS = [
     { minScore: 0,   tickMs: 120 },
-    { minScore: 30,  tickMs: 108 },
-    { minScore: 60,  tickMs: 95  },
-    { minScore: 100, tickMs: 80  },
-    { minScore: 150, tickMs: 68  },
-    { minScore: 200, tickMs: 56  },
+    { minScore: 50,  tickMs: 108 },
+    { minScore: 100, tickMs: 95  },
+    { minScore: 150, tickMs: 80  },
+    { minScore: 200, tickMs: 68  },
+    { minScore: 250, tickMs: 56  },
   ];
 
   const FOOD_SHRINK_CHANCE = 0.2;
