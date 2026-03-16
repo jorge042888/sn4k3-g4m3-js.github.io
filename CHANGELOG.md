@@ -74,6 +74,15 @@ Todos los cambios notables del proyecto se documentan en este archivo.
 - Se eliminaron de la version final los archivos redundantes de la raiz (`game.js`, `stats.js`, `styles.css`).
 - La estructura documentada ahora refleja solo los archivos activos que carga `index.html`.
 
+### 12. Rebranding y mejoras visuales recientes
+
+- La marca visible del juego se actualizo de `Snake JS` a `Sn4k3 G4m3`.
+- El `Game Over` simplifico sus metricas a `Comiste` y `Obstaculos`.
+- Los obstaculos pasaron a renderizarse como hazard blocks mas evidentes, sin cambiar la mecanica.
+- Los controles moviles se redisenaron como un D-pad compacto con mejor precision y uso de espacio.
+- Se reemplazo el intento de fondo en video por una imagen estatica `imagenes/fondo1.jpg` con tratamiento visual tenue para mantener legibilidad.
+- `README.md`, `CHANGELOG.md` y `SECURITY.md` se actualizaron para reflejar esta version activa.
+
 ---
 
 Para mas detalle sobre seguridad y datos, ver [SECURITY.md](SECURITY.md).

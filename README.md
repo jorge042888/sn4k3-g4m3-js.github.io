@@ -1,6 +1,6 @@
-# Snake - Juego clasico
+# Sn4k3 G4m3
 
-Juego de la serpiente en JavaScript (Canvas), con obstaculos dinamicos, estadisticas, nombre de jugador y menu de usuario.
+Juego de la serpiente en JavaScript (Canvas), con obstaculos dinamicos, estadisticas, sonido, branding actualizado y una interfaz optimizada para desktop y movil.
 
 ## Como ejecutar
 
@@ -28,19 +28,21 @@ En movil:
 - **Input corregido**: el campo de nombre permite escribir normalmente letras como `A`, `W`, `S` y `D` sin disparar controles del juego mientras el foco esta en edicion.
 - **Campo alineado a la UI**: el texto del input de nombre usa la paleta verde principal del juego.
 - **Efectos de sonido**: sonidos locales para comida roja, comida verde, pausa y `game over`, cargados desde la carpeta `audio/`.
+- **Fondo decorativo**: la interfaz usa una aurora estatica desde `imagenes/fondo1.jpg`, tratada con blur y capas tenues para mantener contraste con el tablero y overlays.
 - **Comida roja (normal)**: suma `+10` puntos y hace crecer la serpiente.
-- **Obstaculos**: cada vez que la serpiente come una comida roja, aparece un muro aleatorio de `1x1` celda en color brillante. Chocar con un muro termina la partida.
+- **Obstaculos**: cada vez que la serpiente come una comida roja, aparece un bloque hazard aleatorio de `1x1` celda. Chocar con el bloque termina la partida.
 - **Comida verde (shrink)**: aparece aleatoriamente (`20%` de probabilidad por spawn), muestra indicador `x1`, `x2` o `x3`, y reduce la longitud de la serpiente segun ese valor (sin bajar del minimo jugable).
 - **Animacion de reduccion**: al comer comida verde se renderiza una animacion de disolucion en los segmentos removidos y texto flotante `-N`.
 - **Contadores de partida**: en `Game Over` se muestran:
-  - `Circulos comidos` (rojos + verdes).
-  - `Cuadros aleatorios` generados en la partida.
+  - `Comiste` (rojos + verdes).
+  - `Obstaculos` generados en la partida.
 - **Estadisticas**: boton `Estadisticas` en el header. Muestra partidas jugadas, mejor puntuacion, puntuacion media, total de puntos, y dos graficas (puntuacion y duracion por partida) con numeros en barras y linea de tendencia.
 - **Reset de estadisticas**: el modal permite reiniciar historial y record guardados con confirmacion previa.
 - **Persistencia**: record e historial de partidas (ultimas 100) en `localStorage`; cada partida guarda puntuacion, nombre, fecha y duracion.
 - **Mejor jugador**: en la pantalla de inicio se muestra automaticamente el nombre del jugador con mayor puntuacion registrada y se pre-rellena el campo de nombre con ese valor.
 - **Ventana de reglas**: boton `Reglas del juego` en el pie de pagina.
-- **Logo configurable**: junto al texto `Snake JS` se puede cargar un logo desde `imagenes/Snake.ico`. Si el archivo no existe, el logo se oculta automaticamente.
+- **Marca actual**: el encabezado muestra `Sn4k3 G4m3` junto a un icono cargado desde `imagenes/Snake.ico`. Si el archivo no existe, el logo se oculta automaticamente.
+- **Controles moviles renovados**: el pad tactil ahora usa un D-pad compacto, con mejor separacion y mas precision visual/tactil.
 
 ## Estructura del proyecto
 
@@ -55,6 +57,7 @@ snake-game-js/
 |-- css/
 |   `-- styles.css
 |-- imagenes/
+|   |-- fondo1.jpg
 |   `-- Snake.ico
 |-- js/
 |   |-- game.js
