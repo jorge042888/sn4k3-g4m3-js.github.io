@@ -9,7 +9,16 @@
   const GRID_SIZE = 26;
   const CELL_SIZE = 20;
   const CANVAS_SIZE = GRID_SIZE * CELL_SIZE;
-  const TICK_MS = 120;
+
+  // Velocidad adaptativa: a mayor score el tick se reduce
+  const SPEED_TIERS = [
+    { minScore: 0,   tickMs: 120 },
+    { minScore: 30,  tickMs: 108 },
+    { minScore: 60,  tickMs: 95  },
+    { minScore: 100, tickMs: 80  },
+    { minScore: 150, tickMs: 68  },
+    { minScore: 200, tickMs: 56  },
+  ];
 
   const FOOD_SHRINK_CHANCE = 0.2;
   const SHRINK_MULTIPLIERS = [1, 2, 3];
@@ -18,6 +27,7 @@
   const COLLECT_EFFECT_DURATION_MS = 550;
   const PARTICLE_COUNT = 16;
   const SHRINK_EFFECT_DURATION_MS = 560;
+  const DEATH_FLASH_DURATION_MS = 520;
 
   const HIGH_SCORE_KEY = 'snake-high-score';
   const GAME_STATS_KEY = 'snake-game-stats';
@@ -31,81 +41,148 @@
   };
 
   const Direction = {
-    UP: { dx: 0, dy: -1 },
-    DOWN: { dx: 0, dy: 1 },
-    LEFT: { dx: -1, dy: 0 },
-    RIGHT: { dx: 1, dy: 0 },
+    UP:    { dx:  0, dy: -1 },
+    DOWN:  { dx:  0, dy:  1 },
+    LEFT:  { dx: -1, dy:  0 },
+    RIGHT: { dx:  1, dy:  0 },
   };
 
   const KEY = {
-    UP: ['ArrowUp', 'KeyW'],
-    DOWN: ['ArrowDown', 'KeyS'],
-    LEFT: ['ArrowLeft', 'KeyA'],
-    RIGHT: ['ArrowRight', 'KeyD'],
-    PAUSE: 'Space',
+    UP:      ['ArrowUp',    'KeyW'],
+    DOWN:    ['ArrowDown',  'KeyS'],
+    LEFT:    ['ArrowLeft',  'KeyA'],
+    RIGHT:   ['ArrowRight', 'KeyD'],
+    PAUSE:   'Space',
     RESTART: 'Escape',
   };
 
   const canvas = document.getElementById('game-canvas');
   const ctx = canvas.getContext('2d');
 
-  const scoreEl = document.getElementById('score');
-  const highScoreEl = document.getElementById('high-score');
-  const finalScoreEl = document.getElementById('final-score');
-  const goFoodsEatenEl = document.getElementById('go-foods-eaten');
+  // Escala al DPR del dispositivo para renderizado nitido en pantallas HiDPI/Retina
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width  = CANVAS_SIZE * dpr;
+  canvas.height = CANVAS_SIZE * dpr;
+  ctx.scale(dpr, dpr);
+
+  const scoreEl          = document.getElementById('score');
+  const highScoreEl      = document.getElementById('high-score');
+  const speedLevelEl     = document.getElementById('speed-level');
+  const finalScoreEl     = document.getElementById('final-score');
+  const goFoodsEatenEl   = document.getElementById('go-foods-eaten');
   const goObstaclesCountEl = document.getElementById('go-obstacles-count');
-  const gameLogoEl = document.getElementById('game-logo');
+  const newRecordBadge   = document.getElementById('new-record-badge');
+  const gameLogoEl       = document.getElementById('game-logo');
 
-  const startScreen = document.getElementById('start-screen');
+  const startScreen    = document.getElementById('start-screen');
   const gameOverScreen = document.getElementById('game-over-screen');
-  const pauseOverlay = document.getElementById('pause-overlay');
-  const statsOverlay = document.getElementById('stats-overlay');
-  const rulesOverlay = document.getElementById('rules-overlay');
+  const pauseOverlay   = document.getElementById('pause-overlay');
+  const statsOverlay   = document.getElementById('stats-overlay');
+  const rulesOverlay   = document.getElementById('rules-overlay');
 
-  const startBtn = document.getElementById('start-btn');
+  const startBtn   = document.getElementById('start-btn');
   const restartBtn = document.getElementById('restart-btn');
-  const rulesBtn = document.getElementById('rules-btn');
+  const rulesBtn   = document.getElementById('rules-btn');
   const rulesClose = document.getElementById('rules-close');
 
-  const touchUpBtn = document.getElementById('touch-up');
-  const touchDownBtn = document.getElementById('touch-down');
-  const touchLeftBtn = document.getElementById('touch-left');
+  const touchUpBtn    = document.getElementById('touch-up');
+  const touchDownBtn  = document.getElementById('touch-down');
+  const touchLeftBtn  = document.getElementById('touch-left');
   const touchRightBtn = document.getElementById('touch-right');
+  const touchPauseBtn = document.getElementById('touch-pause');
 
-  const playerNameInput = document.getElementById('player-name');
-  const playerBadge = document.getElementById('player-badge');
+  const playerNameInput  = document.getElementById('player-name');
+  const playerBadge      = document.getElementById('player-badge');
   const gameOverPlayerEl = document.getElementById('game-over-player');
   const bestPlayerNameEl = document.getElementById('best-player-name');
+  const leaderboardEl    = document.getElementById('leaderboard');
+  const leaderboardList  = document.getElementById('leaderboard-list');
 
-  let playerName = '';
-  let snake = [];
-  let direction = Direction.RIGHT;
+  let playerName  = '';
+  let snake       = [];
+  let direction   = Direction.RIGHT;
   let nextDirection = Direction.RIGHT;
-  let food = null;
+  let food      = null;
   let obstacles = [];
 
-  let score = 0;
-  let highScore = parseInt(localStorage.getItem(HIGH_SCORE_KEY) || '0', 10);
-  let foodsEatenCount = 0;
+  let score                   = 0;
+  let highScore               = parseInt(localStorage.getItem(HIGH_SCORE_KEY) || '0', 10);
+  let previousHighScore       = highScore;
+  let foodsEatenCount         = 0;
   let obstaclesGeneratedCount = 0;
 
-  let gameLoopId = null;
-  let isRunning = false;
-  let isPaused = false;
-  let lastTick = 0;
+  let gameLoopId    = null;
+  let isRunning     = false;
+  let isPaused      = false;
+  let lastTick      = 0;
   let gameStartTime = 0;
 
   // Swipe tracking sobre canvas
   let touchStartX = null;
   let touchStartY = null;
-  let touchLastX = null;
-  let touchLastY = null;
+  let touchLastX  = null;
+  let touchLastY  = null;
 
   let collectEffects = [];
-  let shrinkEffects = [];
-  let audioUnlocked = false;
+  let shrinkEffects  = [];
+  let audioUnlocked  = false;
+  const audioPool    = {};
 
   highScoreEl.textContent = highScore;
+
+  // ----- Audio -----
+
+  // Precarga los archivos de audio para reducir latencia en la primera reproduccion
+  function preloadAudio() {
+    Object.keys(SOUND_FILES).forEach(function (key) {
+      try {
+        const audio = new Audio(SOUND_FILES[key]);
+        audio.preload = 'auto';
+        audioPool[key] = audio;
+      } catch (_) {}
+    });
+  }
+
+  function unlockAudio() {
+    if (audioUnlocked) return;
+    audioUnlocked = true;
+    preloadAudio();
+  }
+
+  // Clona el elemento precargado para permitir sonidos simultaneos
+  function playSoundEffect(soundKey) {
+    if (!audioUnlocked) return;
+    const src = SOUND_FILES[soundKey];
+    if (!src) return;
+    try {
+      const audio = audioPool[soundKey] ? audioPool[soundKey].cloneNode() : new Audio(src);
+      audio.play().catch(function () {});
+    } catch (_) {}
+  }
+
+  // ----- Velocidad adaptativa -----
+
+  function getSpeedLevel() {
+    let level = 1;
+    for (let i = 0; i < SPEED_TIERS.length; i++) {
+      if (score >= SPEED_TIERS[i].minScore) level = i + 1;
+    }
+    return level;
+  }
+
+  function getTickMs() {
+    let tickMs = SPEED_TIERS[0].tickMs;
+    for (let i = 0; i < SPEED_TIERS.length; i++) {
+      if (score >= SPEED_TIERS[i].minScore) tickMs = SPEED_TIERS[i].tickMs;
+    }
+    return tickMs;
+  }
+
+  function updateSpeedDisplay() {
+    if (speedLevelEl) speedLevelEl.textContent = String(getSpeedLevel());
+  }
+
+  // ----- Utilidades -----
 
   function getStoredHighScore() {
     const parsed = parseInt(localStorage.getItem(HIGH_SCORE_KEY) || '0', 10);
@@ -124,94 +201,7 @@
   function isEditableTarget(target) {
     if (!(target instanceof HTMLElement)) return false;
     if (target.isContentEditable) return true;
-    const editable = target.closest('input, textarea, select, [contenteditable="true"]');
-    return !!editable;
-  }
-
-  function abbreviatePlayerName(name) {
-    const normalized = (name || '')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-zA-Z0-9\s]/g, ' ')
-      .trim()
-      .toUpperCase();
-
-    if (!normalized) return 'JUG';
-
-    const parts = normalized.split(/\s+/).filter(Boolean);
-    if (parts.length > 1) {
-      const initials = parts.map((part) => part[0]).join('');
-      if (initials.length >= 3) return initials.slice(0, 3);
-
-      const firstWord = parts[0];
-      let compact = initials;
-      for (const ch of firstWord.slice(1)) {
-        if (compact.length >= 3) break;
-        compact += ch;
-      }
-      return compact.slice(0, 3);
-    }
-
-    const base = parts[0];
-    if (base.length <= 3) return base;
-
-    const middleConsonants = base.slice(1, -1).replace(/[AEIOU]/g, '');
-    let compact = base[0] + middleConsonants;
-
-    if (compact.length >= 3) {
-      return compact.slice(0, 3);
-    }
-
-    compact += base[base.length - 1];
-    if (compact.length >= 3) {
-      return compact.slice(0, 3);
-    }
-
-    for (const ch of base.slice(1)) {
-      if (compact.length >= 3) break;
-      compact += ch;
-    }
-
-    return compact.slice(0, 3);
-  }
-
-  function collapsePlayerBadge() {
-    if (!playerBadge) return;
-    playerBadge.classList.remove('is-expanded');
-    playerBadge.setAttribute('aria-expanded', 'false');
-  }
-
-  function setPlayerBadgeName(name) {
-    if (!playerBadge) return;
-
-    const fullName = (name || 'Jugador').trim().slice(0, 30);
-    const abbreviatedName = abbreviatePlayerName(fullName);
-
-    playerBadge.textContent = abbreviatedName;
-    playerBadge.dataset.fullName = fullName;
-    playerBadge.setAttribute('aria-label', `Jugador actual: ${fullName}`);
-    playerBadge.setAttribute('aria-expanded', 'false');
-    playerBadge.setAttribute('role', 'button');
-    playerBadge.setAttribute('tabindex', '0');
-    playerBadge.removeAttribute('aria-hidden');
-    collapsePlayerBadge();
-  }
-
-  // Los navegadores bloquean audio sin interaccion previa; esta marca habilita los SFX despues del primer gesto.
-  function unlockAudio() {
-    audioUnlocked = true;
-  }
-
-  // Se crea una instancia corta por reproduccion para permitir sonidos consecutivos sin pelear por currentTime.
-  function playSoundEffect(soundKey) {
-    if (!audioUnlocked) return;
-
-    const src = SOUND_FILES[soundKey];
-    if (!src) return;
-
-    const sound = new Audio(src);
-    sound.preload = 'auto';
-    sound.play().catch(function () {});
+    return !!target.closest('input, textarea, select, [contenteditable="true"]');
   }
 
   function randomCell() {
@@ -222,13 +212,12 @@
   }
 
   function randomShrinkMultiplier() {
-    const idx = Math.floor(Math.random() * SHRINK_MULTIPLIERS.length);
-    return SHRINK_MULTIPLIERS[idx];
+    return SHRINK_MULTIPLIERS[Math.floor(Math.random() * SHRINK_MULTIPLIERS.length)];
   }
 
   function isCellBlockedForFood(cx, cy) {
-    if (snake.some((s) => s.x === cx && s.y === cy)) return true;
-    if (obstacles.some((o) => o.x === cx && o.y === cy)) return true;
+    if (snake.some(function (s) { return s.x === cx && s.y === cy; })) return true;
+    if (obstacles.some(function (o) { return o.x === cx && o.y === cy; })) return true;
     return false;
   }
 
@@ -245,7 +234,6 @@
   function spawnFood() {
     const maxAttempts = GRID_SIZE * GRID_SIZE;
     let attempts = 0;
-
     while (attempts < maxAttempts) {
       const cell = randomCell();
       if (!isCellBlockedForFood(cell.x, cell.y)) {
@@ -254,40 +242,29 @@
       }
       attempts++;
     }
-
     const freeCells = [];
     for (let y = 0; y < GRID_SIZE; y++) {
       for (let x = 0; x < GRID_SIZE; x++) {
-        if (!isCellBlockedForFood(x, y)) {
-          freeCells.push({ x, y });
-        }
+        if (!isCellBlockedForFood(x, y)) freeCells.push({ x, y });
       }
     }
-
-    if (!freeCells.length) {
-      food = null;
-      return false;
-    }
-
-    const fallbackCell = freeCells[Math.floor(Math.random() * freeCells.length)];
-    food = createFoodForCell(fallbackCell);
+    if (!freeCells.length) { food = null; return false; }
+    food = createFoodForCell(freeCells[Math.floor(Math.random() * freeCells.length)]);
     return true;
   }
 
   function isCellFree(cx, cy) {
-    if (snake.some((s) => s.x === cx && s.y === cy)) return false;
+    if (snake.some(function (s) { return s.x === cx && s.y === cy; })) return false;
     if (food && food.x === cx && food.y === cy) return false;
-    if (obstacles.some((o) => o.x === cx && o.y === cy)) return false;
+    if (obstacles.some(function (o) { return o.x === cx && o.y === cy; })) return false;
     return true;
   }
 
   function spawnObstacle() {
     let created = 0;
-
     for (let n = 0; n < OBSTACLE_CELLS_PER_FOOD; n++) {
       let attempts = 0;
-      const maxAttempts = GRID_SIZE * GRID_SIZE;
-      while (attempts < maxAttempts) {
+      while (attempts < GRID_SIZE * GRID_SIZE) {
         const cell = randomCell();
         if (isCellFree(cell.x, cell.y)) {
           obstacles.push({ x: cell.x, y: cell.y });
@@ -297,18 +274,143 @@
         attempts++;
       }
     }
-
     return created;
   }
 
+  // ----- Nombre de jugador -----
+
+  function abbreviatePlayerName(name) {
+    const normalized = (name || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9\s]/g, ' ')
+      .trim()
+      .toUpperCase();
+    if (!normalized) return 'JUG';
+    const parts = normalized.split(/\s+/).filter(Boolean);
+    if (parts.length > 1) {
+      const initials = parts.map(function (p) { return p[0]; }).join('');
+      if (initials.length >= 3) return initials.slice(0, 3);
+      let compact = initials;
+      for (const ch of parts[0].slice(1)) {
+        if (compact.length >= 3) break;
+        compact += ch;
+      }
+      return compact.slice(0, 3);
+    }
+    const base = parts[0];
+    if (base.length <= 3) return base;
+    const middleConsonants = base.slice(1, -1).replace(/[AEIOU]/g, '');
+    let compact = base[0] + middleConsonants;
+    if (compact.length >= 3) return compact.slice(0, 3);
+    compact += base[base.length - 1];
+    if (compact.length >= 3) return compact.slice(0, 3);
+    for (const ch of base.slice(1)) {
+      if (compact.length >= 3) break;
+      compact += ch;
+    }
+    return compact.slice(0, 3);
+  }
+
+  function collapsePlayerBadge() {
+    if (!playerBadge) return;
+    playerBadge.classList.remove('is-expanded');
+    playerBadge.setAttribute('aria-expanded', 'false');
+  }
+
+  function setPlayerBadgeName(name) {
+    if (!playerBadge) return;
+    const fullName = (name || 'Jugador').trim().slice(0, 30);
+    playerBadge.textContent = abbreviatePlayerName(fullName);
+    playerBadge.dataset.fullName = fullName;
+    playerBadge.setAttribute('aria-label', 'Jugador actual: ' + fullName);
+    playerBadge.setAttribute('aria-expanded', 'false');
+    playerBadge.setAttribute('role', 'button');
+    playerBadge.setAttribute('tabindex', '0');
+    playerBadge.removeAttribute('aria-hidden');
+    collapsePlayerBadge();
+  }
+
+  // ----- Leaderboard -----
+
+  function updateLeaderboard() {
+    if (!leaderboardEl || !leaderboardList) return;
+    const stats = getStoredStats();
+    if (!stats.length) {
+      leaderboardEl.classList.add('hidden');
+      return;
+    }
+    // Mejor puntuacion por jugador
+    const playerBests = {};
+    stats.forEach(function (g) {
+      const name = (g.playerName || 'Jugador').toString().slice(0, 30);
+      if (!playerBests[name] || g.score > playerBests[name]) {
+        playerBests[name] = g.score;
+      }
+    });
+    const sorted = Object.entries(playerBests)
+      .sort(function (a, b) { return b[1] - a[1]; })
+      .slice(0, 5);
+
+    leaderboardList.innerHTML = '';
+    sorted.forEach(function (entry, i) {
+      const li = document.createElement('li');
+      li.className = 'leaderboard-item' + (i === 0 ? ' leader' : '');
+
+      const rankSpan = document.createElement('span');
+      rankSpan.className = 'lb-rank';
+      rankSpan.textContent = String(i + 1);
+
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'lb-name';
+      nameSpan.textContent = entry[0];
+
+      const scoreSpan = document.createElement('span');
+      scoreSpan.className = 'lb-score';
+      scoreSpan.textContent = entry[1].toLocaleString('es');
+
+      li.appendChild(rankSpan);
+      li.appendChild(nameSpan);
+      li.appendChild(scoreSpan);
+      leaderboardList.appendChild(li);
+    });
+    leaderboardEl.classList.remove('hidden');
+  }
+
+  function updateBestPlayerFromStats() {
+    if (!bestPlayerNameEl) return;
+    const stats = getStoredStats();
+    if (!stats.length) {
+      bestPlayerNameEl.textContent = 'Aun sin registros';
+      if (playerNameInput && playerNameInput.dataset.prefilledByBest === 'true') {
+        playerNameInput.value = '';
+        delete playerNameInput.dataset.prefilledByBest;
+      }
+      updateLeaderboard();
+      return;
+    }
+    let best = stats[0];
+    for (let i = 1; i < stats.length; i++) {
+      if (stats[i].score > best.score) best = stats[i];
+    }
+    const name = (best.playerName || 'Jugador').toString().slice(0, 30);
+    bestPlayerNameEl.textContent = name;
+    if (playerNameInput && !playerNameInput.value.trim()) {
+      playerNameInput.value = name;
+      playerNameInput.dataset.prefilledByBest = 'true';
+    }
+    updateLeaderboard();
+  }
+
+  // ----- Init & loop -----
+
   function initGame() {
     collectEffects = [];
-    shrinkEffects = [];
-    obstacles = [];
-
+    shrinkEffects  = [];
+    obstacles      = [];
     foodsEatenCount = 0;
     obstaclesGeneratedCount = 0;
-    if (goFoodsEatenEl) goFoodsEatenEl.textContent = '0';
+    if (goFoodsEatenEl)    goFoodsEatenEl.textContent    = '0';
     if (goObstaclesCountEl) goObstaclesCountEl.textContent = '0';
 
     const head = { x: Math.floor(GRID_SIZE / 2), y: Math.floor(GRID_SIZE / 2) };
@@ -318,38 +420,36 @@
       { x: head.x - 2, y: head.y },
     ];
 
-    direction = Direction.RIGHT;
+    direction     = Direction.RIGHT;
     nextDirection = Direction.RIGHT;
     score = 0;
     scoreEl.textContent = '0';
+    previousHighScore = highScore;
+    updateSpeedDisplay();
     spawnFood();
     isRunning = true;
-    isPaused = false;
+    isPaused  = false;
   }
+
+  // ----- Render -----
 
   function drawGrid() {
     ctx.strokeStyle = 'rgba(56, 205, 235, 0.06)';
     ctx.lineWidth = 1;
     for (let i = 0; i <= GRID_SIZE; i++) {
       const p = i * CELL_SIZE;
-      ctx.beginPath();
-      ctx.moveTo(p, 0);
-      ctx.lineTo(p, CANVAS_SIZE);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(0, p);
-      ctx.lineTo(CANVAS_SIZE, p);
-      ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(p, 0);          ctx.lineTo(p, CANVAS_SIZE); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, p);          ctx.lineTo(CANVAS_SIZE, p); ctx.stroke();
     }
   }
 
   function drawSnake() {
     const gradient = ctx.createLinearGradient(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-    gradient.addColorStop(0, '#5dd4f0');
+    gradient.addColorStop(0,   '#5dd4f0');
     gradient.addColorStop(0.5, '#38CDEB');
-    gradient.addColorStop(1, '#2ab8d4');
+    gradient.addColorStop(1,   '#2ab8d4');
 
-    snake.forEach((segment, i) => {
+    snake.forEach(function (segment, i) {
       const x = segment.x * CELL_SIZE;
       const y = segment.y * CELL_SIZE;
       const isHead = i === 0;
@@ -357,11 +457,7 @@
       const cx = x + CELL_SIZE / 2;
       const cy = y + CELL_SIZE / 2;
 
-      if (isHead) {
-        ctx.shadowColor = 'rgba(56, 205, 235, 0.6)';
-        ctx.shadowBlur = 12;
-      }
-
+      if (isHead) { ctx.shadowColor = 'rgba(56, 205, 235, 0.6)'; ctx.shadowBlur = 12; }
       ctx.fillStyle = gradient;
       ctx.beginPath();
       ctx.arc(cx, cy, radius, 0, Math.PI * 2);
@@ -378,14 +474,14 @@
   }
 
   function drawObstacles() {
-    obstacles.forEach((obs) => {
-      const x = obs.x * CELL_SIZE;
-      const y = obs.y * CELL_SIZE;
+    obstacles.forEach(function (obs) {
+      const x    = obs.x * CELL_SIZE;
+      const y    = obs.y * CELL_SIZE;
       const inset = 2;
       const w = CELL_SIZE - inset * 2;
       const h = CELL_SIZE - inset * 2;
       const left = x + inset;
-      const top = y + inset;
+      const top  = y + inset;
 
       ctx.save();
       ctx.fillStyle = '#151a1f';
@@ -395,10 +491,7 @@
       ctx.shadowBlur = 0;
 
       ctx.save();
-      ctx.beginPath();
-      ctx.rect(left, top, w, h);
-      ctx.clip();
-
+      ctx.beginPath(); ctx.rect(left, top, w, h); ctx.clip();
       for (let stripe = -h; stripe < w + h; stripe += 7) {
         ctx.strokeStyle = stripe % 14 === 0 ? 'rgba(255, 190, 79, 0.92)' : 'rgba(41, 32, 18, 0.96)';
         ctx.lineWidth = 4;
@@ -407,7 +500,6 @@
         ctx.lineTo(left + stripe + h, top + h);
         ctx.stroke();
       }
-
       ctx.restore();
 
       ctx.strokeStyle = 'rgba(255, 214, 127, 0.95)';
@@ -417,19 +509,15 @@
       ctx.strokeStyle = 'rgba(255, 88, 88, 0.88)';
       ctx.lineWidth = 1.8;
       ctx.beginPath();
-      ctx.moveTo(left + 4, top + 4);
-      ctx.lineTo(left + w - 4, top + h - 4);
-      ctx.moveTo(left + w - 4, top + 4);
-      ctx.lineTo(left + 4, top + h - 4);
+      ctx.moveTo(left + 4, top + 4);     ctx.lineTo(left + w - 4, top + h - 4);
+      ctx.moveTo(left + w - 4, top + 4); ctx.lineTo(left + 4, top + h - 4);
       ctx.stroke();
-
       ctx.restore();
     });
   }
 
   function drawFood() {
     if (!food) return;
-
     const cx = food.x * CELL_SIZE + CELL_SIZE / 2;
     const cy = food.y * CELL_SIZE + CELL_SIZE / 2;
 
@@ -437,7 +525,6 @@
       const grad = ctx.createRadialGradient(cx - 3, cy - 4, 2, cx, cy, CELL_SIZE / 2 + 2);
       grad.addColorStop(0, '#8cff95');
       grad.addColorStop(1, '#22a352');
-
       ctx.shadowColor = 'rgba(106, 255, 143, 0.55)';
       ctx.shadowBlur = 12;
       ctx.fillStyle = grad;
@@ -445,12 +532,11 @@
       ctx.arc(cx, cy, CELL_SIZE / 2 - 2, 0, Math.PI * 2);
       ctx.fill();
       ctx.shadowBlur = 0;
-
       ctx.fillStyle = '#072314';
       ctx.font = 'bold 10px Outfit, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(`x${food.multiplier}`, cx, cy);
+      ctx.fillText('x' + food.multiplier, cx, cy);
       return;
     }
 
@@ -461,7 +547,6 @@
     ctx.arc(cx, cy, CELL_SIZE / 2 - 2, 0, Math.PI * 2);
     ctx.fill();
     ctx.shadowBlur = 0;
-
     ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
     ctx.beginPath();
     ctx.arc(cx, cy, 3, 0, Math.PI * 2);
@@ -469,131 +554,98 @@
   }
 
   function triggerCollectEffect(centerX, centerY) {
-    collectEffects.push({
-      x: centerX,
-      y: centerY,
-      startTime: performance.now(),
-    });
+    collectEffects.push({ x: centerX, y: centerY, startTime: performance.now() });
   }
 
   function drawCollectEffects(now) {
     const toRemove = [];
-
-    collectEffects.forEach((eff, i) => {
+    collectEffects.forEach(function (eff, i) {
       const elapsed = now - eff.startTime;
-      if (elapsed >= COLLECT_EFFECT_DURATION_MS) {
-        toRemove.push(i);
-        return;
-      }
-
+      if (elapsed >= COLLECT_EFFECT_DURATION_MS) { toRemove.push(i); return; }
       const t = elapsed / COLLECT_EFFECT_DURATION_MS;
-      const ringRadius = 8 + t * 65;
-      const ringAlpha = Math.max(0, (1 - t) * 0.9);
 
-      ctx.strokeStyle = `rgba(56, 205, 235, ${ringAlpha})`;
+      ctx.strokeStyle = 'rgba(56, 205, 235, ' + Math.max(0, (1 - t) * 0.9) + ')';
       ctx.lineWidth = 3;
       ctx.shadowColor = 'rgba(56, 205, 235, 0.9)';
       ctx.shadowBlur = 14;
       ctx.beginPath();
-      ctx.arc(eff.x, eff.y, ringRadius, 0, Math.PI * 2);
+      ctx.arc(eff.x, eff.y, 8 + t * 65, 0, Math.PI * 2);
       ctx.stroke();
       ctx.shadowBlur = 0;
 
-      const ring2Radius = 12 + t * 50;
-      const ring2Alpha = Math.max(0, (1 - t * 1.2) * 0.5);
-      ctx.strokeStyle = `rgba(255, 255, 255, ${ring2Alpha})`;
+      ctx.strokeStyle = 'rgba(255, 255, 255, ' + Math.max(0, (1 - t * 1.2) * 0.5) + ')';
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.arc(eff.x, eff.y, ring2Radius, 0, Math.PI * 2);
+      ctx.arc(eff.x, eff.y, 12 + t * 50, 0, Math.PI * 2);
       ctx.stroke();
 
       for (let p = 0; p < PARTICLE_COUNT; p++) {
         const angle = (p / PARTICLE_COUNT) * Math.PI * 2 + t * 0.5;
-        const dist = t * 42;
-        const px = eff.x + Math.cos(angle) * dist;
-        const py = eff.y + Math.sin(angle) * dist;
-        const particleAlpha = Math.max(0, 1 - t * 1.1);
-        const size = 2 + (1 - t) * 2;
-
+        const dist  = t * 42;
         ctx.fillStyle = p % 3 === 0
-          ? `rgba(255, 255, 255, ${particleAlpha})`
-          : `rgba(56, 205, 235, ${particleAlpha})`;
+          ? 'rgba(255, 255, 255, ' + Math.max(0, 1 - t * 1.1) + ')'
+          : 'rgba(56, 205, 235, '  + Math.max(0, 1 - t * 1.1) + ')';
         ctx.shadowColor = 'rgba(56, 205, 235, 0.8)';
         ctx.shadowBlur = 6;
         ctx.beginPath();
-        ctx.arc(px, py, size, 0, Math.PI * 2);
+        ctx.arc(eff.x + Math.cos(angle) * dist, eff.y + Math.sin(angle) * dist,
+                2 + (1 - t) * 2, 0, Math.PI * 2);
         ctx.fill();
       }
       ctx.shadowBlur = 0;
     });
-
-    toRemove.reverse().forEach((idx) => collectEffects.splice(idx, 1));
+    toRemove.reverse().forEach(function (idx) { collectEffects.splice(idx, 1); });
   }
 
-  // Efecto de reduccion: dibuja "fantasmas" de segmentos removidos y un texto flotante (-N).
   function triggerShrinkEffect(removedSegments, removedAmount) {
     if (!removedSegments.length || removedAmount <= 0) return;
-
     const anchor = removedSegments[0];
     shrinkEffects.push({
       removedAmount,
       startTime: performance.now(),
       anchorX: anchor.x * CELL_SIZE + CELL_SIZE / 2,
       anchorY: anchor.y * CELL_SIZE + CELL_SIZE / 2,
-      segments: removedSegments.map((seg) => ({
-        cx: seg.x * CELL_SIZE + CELL_SIZE / 2,
-        cy: seg.y * CELL_SIZE + CELL_SIZE / 2,
-      })),
+      segments: removedSegments.map(function (seg) {
+        return { cx: seg.x * CELL_SIZE + CELL_SIZE / 2, cy: seg.y * CELL_SIZE + CELL_SIZE / 2 };
+      }),
     });
   }
 
   function drawShrinkEffects(now) {
     const toRemove = [];
-
-    shrinkEffects.forEach((eff, i) => {
+    shrinkEffects.forEach(function (eff, i) {
       const elapsed = now - eff.startTime;
-      if (elapsed >= SHRINK_EFFECT_DURATION_MS) {
-        toRemove.push(i);
-        return;
-      }
-
+      if (elapsed >= SHRINK_EFFECT_DURATION_MS) { toRemove.push(i); return; }
       const t = elapsed / SHRINK_EFFECT_DURATION_MS;
       const alpha = Math.max(0, 0.8 - t * 0.9);
 
-      eff.segments.forEach((seg, idx) => {
+      eff.segments.forEach(function (seg, idx) {
         const offset = idx * 0.6;
         const radius = Math.max(2.5, CELL_SIZE / 2 - 3 + t * 5 - offset * 0.06);
         const y = seg.cy - t * 12 - offset;
-
-        ctx.fillStyle = `rgba(124, 250, 145, ${Math.max(0, alpha - idx * 0.05)})`;
+        ctx.fillStyle = 'rgba(124, 250, 145, ' + Math.max(0, alpha - idx * 0.05) + ')';
         ctx.shadowColor = 'rgba(124, 250, 145, 0.65)';
         ctx.shadowBlur = 8;
-        ctx.beginPath();
-        ctx.arc(seg.cx, y, radius, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.strokeStyle = `rgba(13, 38, 22, ${Math.max(0, 0.55 - t * 0.35)})`;
+        ctx.beginPath(); ctx.arc(seg.cx, y, radius, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = 'rgba(13, 38, 22, ' + Math.max(0, 0.55 - t * 0.35) + ')';
         ctx.lineWidth = 1.4;
         ctx.beginPath();
         ctx.moveTo(seg.cx - radius * 0.55, y - radius * 0.45);
         ctx.lineTo(seg.cx + radius * 0.55, y + radius * 0.45);
         ctx.stroke();
       });
-
       ctx.shadowBlur = 0;
-      ctx.fillStyle = `rgba(173, 255, 191, ${Math.max(0, 1 - t * 1.1)})`;
+      ctx.fillStyle = 'rgba(173, 255, 191, ' + Math.max(0, 1 - t * 1.1) + ')';
       ctx.font = 'bold 16px Outfit, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(`-${eff.removedAmount}`, eff.anchorX, eff.anchorY - 18 - t * 26);
+      ctx.fillText('-' + eff.removedAmount, eff.anchorX, eff.anchorY - 18 - t * 26);
     });
-
-    toRemove.reverse().forEach((idx) => shrinkEffects.splice(idx, 1));
+    toRemove.reverse().forEach(function (idx) { shrinkEffects.splice(idx, 1); });
   }
 
   function draw(now) {
     const frameTime = now || performance.now();
-
     ctx.fillStyle = '#0f1419';
     ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
     drawGrid();
@@ -604,20 +656,20 @@
     drawShrinkEffects(frameTime);
   }
 
+  // ----- Overlays -----
+
   function isOverlayVisible(el, visibleClass) {
     return !!(el && el.classList.contains(visibleClass));
   }
 
   function hasBlockingOverlayOpen() {
-    return (
-      isOverlayVisible(rulesOverlay, 'visible') ||
-      isOverlayVisible(statsOverlay, 'visible')
-    );
+    return isOverlayVisible(rulesOverlay, 'visible') || isOverlayVisible(statsOverlay, 'visible');
   }
+
+  // ----- Game logic -----
 
   function tick() {
     if (!isRunning || isPaused) return;
-
     direction = nextDirection;
     const head = snake[0];
     const newHead = {
@@ -625,23 +677,18 @@
       y: (head.y + direction.dy + GRID_SIZE) % GRID_SIZE,
     };
 
-    if (snake.some((s, i) => i > 0 && s.x === newHead.x && s.y === newHead.y)) {
-      gameOver();
-      return;
+    if (snake.some(function (s, i) { return i > 0 && s.x === newHead.x && s.y === newHead.y; })) {
+      gameOver(); return;
     }
-    if (obstacles.some((o) => o.x === newHead.x && o.y === newHead.y)) {
-      gameOver();
-      return;
+    if (obstacles.some(function (o) { return o.x === newHead.x && o.y === newHead.y; })) {
+      gameOver(); return;
     }
 
     snake.unshift(newHead);
 
     if (food && newHead.x === food.x && newHead.y === food.y) {
       foodsEatenCount += 1;
-
-      const cx = food.x * CELL_SIZE + CELL_SIZE / 2;
-      const cy = food.y * CELL_SIZE + CELL_SIZE / 2;
-      triggerCollectEffect(cx, cy);
+      triggerCollectEffect(food.x * CELL_SIZE + CELL_SIZE / 2, food.y * CELL_SIZE + CELL_SIZE / 2);
 
       if (food.type === 'shrink') {
         playSoundEffect('shrinkFood');
@@ -649,8 +696,6 @@
         const removable = Math.max(0, snake.length - MIN_SNAKE_LENGTH);
         const removedCount = Math.min(shrinkBy, removable);
         const removedSegments = [];
-
-        // Removemos cola y guardamos segmentos para animar la reduccion.
         for (let i = 0; i < removedCount; i++) {
           const removed = snake.pop();
           if (removed) removedSegments.push(removed);
@@ -660,8 +705,8 @@
         playSoundEffect('normalFood');
         score += 10;
         scoreEl.textContent = score;
+        updateSpeedDisplay();
         obstaclesGeneratedCount += spawnObstacle();
-
         if (score > highScore) {
           highScore = score;
           highScoreEl.textContent = highScore;
@@ -669,20 +714,15 @@
         }
       }
 
-      if (!spawnFood()) {
-        gameOver();
-        return;
-      }
+      if (!spawnFood()) { gameOver(); return; }
       return;
     }
-
     snake.pop();
   }
 
   function runLoop(timestamp) {
     if (!isRunning) return;
-
-    if (timestamp - lastTick >= TICK_MS) {
+    if (timestamp - lastTick >= getTickMs()) {
       lastTick = timestamp;
       tick();
     }
@@ -690,52 +730,7 @@
     gameLoopId = requestAnimationFrame(runLoop);
   }
 
-  function startGame() {
-    const inputName = (playerNameInput && playerNameInput.value && playerNameInput.value.trim()) || 'Jugador';
-    playerName = inputName.trim().slice(0, 30);
-    if (playerNameInput) {
-      playerNameInput.value = playerName;
-      delete playerNameInput.dataset.prefilledByBest;
-    }
-
-    startScreen.classList.remove('overlay-visible');
-    setPlayerBadgeName(playerName);
-
-    initGame();
-    draw();
-    lastTick = performance.now();
-    gameStartTime = performance.now();
-    gameLoopId = requestAnimationFrame(runLoop);
-  }
-
-  function updateBestPlayerFromStats() {
-    if (!bestPlayerNameEl) return;
-    const stats = getStoredStats();
-
-    if (!stats.length) {
-      bestPlayerNameEl.textContent = 'Aun sin registros';
-      if (playerNameInput && playerNameInput.dataset.prefilledByBest === 'true') {
-        playerNameInput.value = '';
-        delete playerNameInput.dataset.prefilledByBest;
-      }
-      return;
-    }
-
-    let best = stats[0];
-    for (let i = 1; i < stats.length; i++) {
-      if (stats[i].score > best.score) {
-        best = stats[i];
-      }
-    }
-
-    const name = (best.playerName || 'Jugador').toString().slice(0, 30);
-    bestPlayerNameEl.textContent = name;
-    // Solo reinyecta el nombre si el campo estaba vacio; no pisa lo que el usuario ya escribio.
-    if (playerNameInput && !playerNameInput.value.trim()) {
-      playerNameInput.value = name;
-      playerNameInput.dataset.prefilledByBest = 'true';
-    }
-  }
+  // ----- Estadisticas -----
 
   function saveGameStats() {
     const durationSec = Math.round((performance.now() - gameStartTime) / 1000);
@@ -745,54 +740,97 @@
       date: new Date().toISOString(),
       duration: durationSec,
     };
-
     let stats = [];
     try {
       const raw = localStorage.getItem(GAME_STATS_KEY);
       if (raw) stats = JSON.parse(raw);
-    } catch (_) {
-      stats = [];
-    }
-
+    } catch (_) { stats = []; }
     stats.unshift(entry);
     if (stats.length > MAX_STORED_GAMES) stats = stats.slice(0, MAX_STORED_GAMES);
+    try { localStorage.setItem(GAME_STATS_KEY, JSON.stringify(stats)); } catch (_) {}
+  }
 
-    try {
-      localStorage.setItem(GAME_STATS_KEY, JSON.stringify(stats));
-    } catch (_) {}
+  // ----- Pantallas -----
+
+  function showGameOverScreen() {
+    finalScoreEl.textContent = score;
+    if (goFoodsEatenEl)    goFoodsEatenEl.textContent    = String(foodsEatenCount);
+    if (goObstaclesCountEl) goObstaclesCountEl.textContent = String(obstaclesGeneratedCount);
+    if (gameOverPlayerEl)  gameOverPlayerEl.textContent  = playerName ? playerName + ', ' : '';
+
+    const isNewRecord = score > 0 && score > previousHighScore;
+    if (newRecordBadge) {
+      newRecordBadge.classList.toggle('visible', isNewRecord);
+      newRecordBadge.setAttribute('aria-hidden', isNewRecord ? 'false' : 'true');
+    }
+    gameOverScreen.classList.add('overlay-visible');
   }
 
   function gameOver() {
     isRunning = false;
-    if (gameLoopId) {
-      cancelAnimationFrame(gameLoopId);
-      gameLoopId = null;
-    }
-
+    if (gameLoopId) { cancelAnimationFrame(gameLoopId); gameLoopId = null; }
     playSoundEffect('gameOver');
     saveGameStats();
-    finalScoreEl.textContent = score;
-    if (goFoodsEatenEl) goFoodsEatenEl.textContent = String(foodsEatenCount);
-    if (goObstaclesCountEl) goObstaclesCountEl.textContent = String(obstaclesGeneratedCount);
-    if (gameOverPlayerEl) gameOverPlayerEl.textContent = playerName ? `${playerName}, ` : '';
-    gameOverScreen.classList.add('overlay-visible');
+
+    // Flash rojo al morir: animacion corta antes de mostrar el game-over
+    const flashStart = performance.now();
+    function flashLoop(ts) {
+      const t = Math.min(1, (ts - flashStart) / DEATH_FLASH_DURATION_MS);
+      draw(ts);
+      ctx.fillStyle = 'rgba(220, 30, 30, ' + ((1 - t) * 0.55) + ')';
+      ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+      if (t < 1) {
+        requestAnimationFrame(flashLoop);
+      } else {
+        showGameOverScreen();
+      }
+    }
+    requestAnimationFrame(flashLoop);
+  }
+
+  function showStartScreen() {
+    isRunning = false;
+    isPaused  = false;
+    if (gameLoopId) { cancelAnimationFrame(gameLoopId); gameLoopId = null; }
+    gameOverScreen.classList.remove('overlay-visible');
+    pauseOverlay.classList.remove('overlay-visible');
+    if (newRecordBadge) {
+      newRecordBadge.classList.remove('visible');
+      newRecordBadge.setAttribute('aria-hidden', 'true');
+    }
+    updateBestPlayerFromStats(); // actualiza leaderboard y mejor jugador
+    startScreen.classList.add('overlay-visible');
   }
 
   function restart() {
-    gameOverScreen.classList.remove('overlay-visible');
-    startGame();
+    showStartScreen();
   }
+
+  function startGame() {
+    const inputName = (playerNameInput && playerNameInput.value && playerNameInput.value.trim()) || 'Jugador';
+    playerName = inputName.trim().slice(0, 30);
+    if (playerNameInput) {
+      playerNameInput.value = playerName;
+      delete playerNameInput.dataset.prefilledByBest;
+    }
+    startScreen.classList.remove('overlay-visible');
+    setPlayerBadgeName(playerName);
+    initGame();
+    draw();
+    lastTick      = performance.now();
+    gameStartTime = performance.now();
+    gameLoopId = requestAnimationFrame(runLoop);
+  }
+
+  // ----- Pausa -----
 
   function setPaused(nextPaused) {
     if (!isRunning) return false;
     if (isPaused === nextPaused) return false;
-
     isPaused = nextPaused;
     if (isPaused) playSoundEffect('pause');
     pauseOverlay.classList.toggle('overlay-visible', isPaused);
-    if (!isPaused) {
-      lastTick = performance.now();
-    }
+    if (!isPaused) lastTick = performance.now();
     return true;
   }
 
@@ -800,6 +838,8 @@
     if (!isRunning) return;
     setPaused(!isPaused);
   }
+
+  // ----- Input -----
 
   function handleKeydown(e) {
     if (isEditableTarget(e.target)) return;
@@ -816,103 +856,66 @@
     if (e.code === KEY.RESTART) {
       if (blockingOverlayOpen) return;
       e.preventDefault();
-      if (isRunning && !isPaused) {
-        restart();
+      if (isRunning || gameOverScreen.classList.contains('overlay-visible')) {
+        showStartScreen();
       }
       return;
     }
 
     if (blockingOverlayOpen || isPaused) return;
 
-    if (KEY.UP.includes(e.code)) {
-      e.preventDefault();
-      changeDirection(Direction.UP);
-    } else if (KEY.DOWN.includes(e.code)) {
-      e.preventDefault();
-      changeDirection(Direction.DOWN);
-    } else if (KEY.LEFT.includes(e.code)) {
-      e.preventDefault();
-      changeDirection(Direction.LEFT);
-    } else if (KEY.RIGHT.includes(e.code)) {
-      e.preventDefault();
-      changeDirection(Direction.RIGHT);
-    }
+    if (KEY.UP.includes(e.code))         { e.preventDefault(); changeDirection(Direction.UP);    }
+    else if (KEY.DOWN.includes(e.code))  { e.preventDefault(); changeDirection(Direction.DOWN);  }
+    else if (KEY.LEFT.includes(e.code))  { e.preventDefault(); changeDirection(Direction.LEFT);  }
+    else if (KEY.RIGHT.includes(e.code)) { e.preventDefault(); changeDirection(Direction.RIGHT); }
   }
 
   function changeDirection(newDir) {
     if (!isRunning || isPaused || hasBlockingOverlayOpen()) return;
-
-    if (newDir === Direction.UP && direction !== Direction.DOWN) {
-      nextDirection = Direction.UP;
-    } else if (newDir === Direction.DOWN && direction !== Direction.UP) {
-      nextDirection = Direction.DOWN;
-    } else if (newDir === Direction.LEFT && direction !== Direction.RIGHT) {
-      nextDirection = Direction.LEFT;
-    } else if (newDir === Direction.RIGHT && direction !== Direction.LEFT) {
-      nextDirection = Direction.RIGHT;
-    }
+    if (newDir === Direction.UP    && direction !== Direction.DOWN)  nextDirection = Direction.UP;
+    else if (newDir === Direction.DOWN  && direction !== Direction.UP)   nextDirection = Direction.DOWN;
+    else if (newDir === Direction.LEFT  && direction !== Direction.RIGHT) nextDirection = Direction.LEFT;
+    else if (newDir === Direction.RIGHT && direction !== Direction.LEFT)  nextDirection = Direction.RIGHT;
   }
+
+  // ----- Touch swipe -----
 
   function handleTouchStart(e) {
     if (e.touches.length !== 1) return;
     const t = e.touches[0];
-    touchStartX = t.clientX;
-    touchStartY = t.clientY;
-    touchLastX = touchStartX;
-    touchLastY = touchStartY;
+    touchStartX = t.clientX; touchStartY = t.clientY;
+    touchLastX  = t.clientX; touchLastY  = t.clientY;
   }
 
   function handleTouchMove(e) {
     if (e.touches.length !== 1) return;
-    const t = e.touches[0];
-    touchLastX = t.clientX;
-    touchLastY = t.clientY;
+    touchLastX = e.touches[0].clientX;
+    touchLastY = e.touches[0].clientY;
     e.preventDefault();
   }
 
   function handleTouchEnd() {
     if (touchStartX == null || touchLastX == null) return;
-
     const dx = touchLastX - touchStartX;
     const dy = touchLastY - touchStartY;
     const absX = Math.abs(dx);
     const absY = Math.abs(dy);
-    const threshold = 24;
-
-    if (absX < threshold && absY < threshold) {
-      touchStartX = touchStartY = touchLastX = touchLastY = null;
-      return;
-    }
-
-    if (absX > absY) {
-      if (dx > 0) {
-        changeDirection(Direction.RIGHT);
-      } else {
-        changeDirection(Direction.LEFT);
-      }
-    } else if (dy > 0) {
-      changeDirection(Direction.DOWN);
-    } else {
-      changeDirection(Direction.UP);
-    }
-
+    if (absX < 24 && absY < 24) { touchStartX = touchStartY = touchLastX = touchLastY = null; return; }
+    if (absX > absY) { changeDirection(dx > 0 ? Direction.RIGHT : Direction.LEFT); }
+    else             { changeDirection(dy > 0 ? Direction.DOWN  : Direction.UP);   }
     touchStartX = touchStartY = touchLastX = touchLastY = null;
   }
 
-  // Botones tactiles y swipe conviven; ambos reutilizan changeDirection().
   function bindDirectionButton(button, dir) {
     if (!button) return;
-
-    const onPress = function (e) {
-      e.preventDefault();
-      changeDirection(dir);
-    };
-
+    const onPress = function (e) { e.preventDefault(); changeDirection(dir); };
     button.addEventListener('touchstart', onPress, { passive: false });
     button.addEventListener('click', onPress);
   }
 
-  function openRules() {
+  // ----- Reglas -----
+
+  function openRules()  {
     if (!rulesOverlay) return;
     rulesOverlay.classList.add('visible');
     rulesOverlay.setAttribute('aria-hidden', 'false');
@@ -924,103 +927,76 @@
     rulesOverlay.setAttribute('aria-hidden', 'true');
   }
 
+  // ----- Event listeners -----
+
   if (gameLogoEl) {
-    gameLogoEl.addEventListener('error', function () {
-      gameLogoEl.style.display = 'none';
-    });
+    gameLogoEl.addEventListener('error', function () { gameLogoEl.style.display = 'none'; });
   }
 
   if (playerNameInput) {
     playerNameInput.addEventListener('focus', unlockAudio);
-    playerNameInput.addEventListener('input', function () {
-      delete playerNameInput.dataset.prefilledByBest;
-    });
+    playerNameInput.addEventListener('input', function () { delete playerNameInput.dataset.prefilledByBest; });
   }
 
   if (playerBadge) {
     playerBadge.addEventListener('click', function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-      const nextExpanded = !playerBadge.classList.contains('is-expanded');
-      playerBadge.classList.toggle('is-expanded', nextExpanded);
-      playerBadge.setAttribute('aria-expanded', nextExpanded ? 'true' : 'false');
+      e.preventDefault(); e.stopPropagation();
+      const next = !playerBadge.classList.contains('is-expanded');
+      playerBadge.classList.toggle('is-expanded', next);
+      playerBadge.setAttribute('aria-expanded', next ? 'true' : 'false');
     });
-
     playerBadge.addEventListener('keydown', function (e) {
       if (e.code === 'Enter' || e.code === 'Space') {
-        e.preventDefault();
-        e.stopPropagation();
-        const nextExpanded = !playerBadge.classList.contains('is-expanded');
-        playerBadge.classList.toggle('is-expanded', nextExpanded);
-        playerBadge.setAttribute('aria-expanded', nextExpanded ? 'true' : 'false');
-      } else if (e.code === 'Escape') {
-        collapsePlayerBadge();
-      }
+        e.preventDefault(); e.stopPropagation();
+        const next = !playerBadge.classList.contains('is-expanded');
+        playerBadge.classList.toggle('is-expanded', next);
+        playerBadge.setAttribute('aria-expanded', next ? 'true' : 'false');
+      } else if (e.code === 'Escape') { collapsePlayerBadge(); }
     });
   }
 
   document.addEventListener('click', function (e) {
     if (!playerBadge || playerBadge.getAttribute('aria-hidden') === 'true') return;
-    if (playerBadge.contains(e.target)) return;
-    collapsePlayerBadge();
+    if (!playerBadge.contains(e.target)) collapsePlayerBadge();
   });
 
-  startBtn.addEventListener('click', function () {
-    unlockAudio();
-    startGame();
-  });
-  restartBtn.addEventListener('click', function () {
-    unlockAudio();
-    restart();
-  });
+  startBtn.addEventListener('click', function ()   { unlockAudio(); startGame(); });
+  restartBtn.addEventListener('click', function ()  { unlockAudio(); restart(); });
   document.addEventListener('keydown', handleKeydown);
   document.addEventListener('pointerdown', unlockAudio, { passive: true });
 
   canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
-  canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
-  canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+  canvas.addEventListener('touchmove',  handleTouchMove,  { passive: false });
+  canvas.addEventListener('touchend',   handleTouchEnd,   { passive: false });
 
-  bindDirectionButton(touchUpBtn, Direction.UP);
-  bindDirectionButton(touchDownBtn, Direction.DOWN);
-  bindDirectionButton(touchLeftBtn, Direction.LEFT);
+  bindDirectionButton(touchUpBtn,    Direction.UP);
+  bindDirectionButton(touchDownBtn,  Direction.DOWN);
+  bindDirectionButton(touchLeftBtn,  Direction.LEFT);
   bindDirectionButton(touchRightBtn, Direction.RIGHT);
 
-  if (rulesBtn) {
-    rulesBtn.addEventListener('click', openRules);
-  }
-  if (rulesClose) {
-    rulesClose.addEventListener('click', closeRules);
-  }
-  if (rulesOverlay) {
-    rulesOverlay.addEventListener('click', function (e) {
-      if (e.target === rulesOverlay) closeRules();
-    });
+  if (touchPauseBtn) {
+    touchPauseBtn.addEventListener('touchstart', function (e) { e.preventDefault(); togglePause(); }, { passive: false });
+    touchPauseBtn.addEventListener('click', togglePause);
   }
 
+  if (rulesBtn)   rulesBtn.addEventListener('click', openRules);
+  if (rulesClose) rulesClose.addEventListener('click', closeRules);
+  if (rulesOverlay) {
+    rulesOverlay.addEventListener('click', function (e) { if (e.target === rulesOverlay) closeRules(); });
+  }
   document.addEventListener('keydown', function (e) {
-    if (e.code === 'Escape' && rulesOverlay && rulesOverlay.classList.contains('visible')) {
-      closeRules();
-    }
+    if (e.code === 'Escape' && rulesOverlay && rulesOverlay.classList.contains('visible')) closeRules();
   });
 
   window.snakeGameControls = {
-    isRunning: function () {
-      return isRunning;
-    },
-    isPaused: function () {
-      return isPaused;
-    },
-    pause: function () {
-      return setPaused(true);
-    },
-    resume: function () {
-      return setPaused(false);
-    },
-    // Permite que otros modulos, como estadisticas, sincronicen UI y memoria con localStorage tras un reset.
+    isRunning:  function () { return isRunning; },
+    isPaused:   function () { return isPaused;  },
+    pause:      function () { return setPaused(true);  },
+    resume:     function () { return setPaused(false); },
     syncPersistedState: function () {
       highScore = getStoredHighScore();
       highScoreEl.textContent = String(highScore);
-      updateBestPlayerFromStats();
+      updateBestPlayerFromStats(); // tambien llama updateLeaderboard
       collapsePlayerBadge();
     },
   };

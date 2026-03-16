@@ -74,6 +74,18 @@ Todos los cambios notables del proyecto se documentan en este archivo.
 - Se eliminaron de la version final los archivos redundantes de la raiz (`game.js`, `stats.js`, `styles.css`).
 - La estructura documentada ahora refleja solo los archivos activos que carga `index.html`.
 
+### 13. Mejoras de gameplay, UX y rendimiento
+
+- **Velocidad adaptativa**: el intervalo de tick se reduce automaticamente al subir el score (120 ms → 108 → 95 → 80 → 68 → 56 ms en seis niveles). El nivel se muestra en el header como "Vel.".
+- **Leaderboard en pantalla de inicio**: muestra el Top 5 de jugadores (mejor puntuacion por nombre) calculado desde `snake-game-stats`. Se oculta si no hay partidas.
+- **Badge de Nuevo Record**: al superar el record anterior, la pantalla de `Game Over` muestra un badge animado con efecto pop.
+- **Flash de muerte**: animacion roja de ~520 ms sobre el tablero antes de mostrar `Game Over`, mejorando la retroalimentacion visual.
+- **Boton de pausa tactil**: nuevo boton `⏸` junto al D-pad en movil; funciona con `touchstart` y `click`.
+- **Canvas HiDPI**: el canvas de juego ahora escala con `devicePixelRatio` (max ×2) para renderizado nitido en pantallas Retina.
+- **Audio precargado**: `preloadAudio()` clona instancias precargadas en lugar de crear `new Audio()` desde cero en cada sonido.
+- **Flujo de inicio mejorado**: `Esc` y "Jugar de nuevo" llevan a la pantalla de inicio (con leaderboard actualizado) en lugar de reiniciar instantaneamente; `Iniciar partida` permite arrancar de inmediato.
+- **Overlay scrollable**: el contenido de los overlays puede hacer scroll en pantallas muy pequenas para que nada quede cortado.
+
 ### 12. Rebranding y mejoras visuales recientes
 
 - La marca visible del juego se actualizo de `Snake JS` a `Sn4k3 G4m3`.

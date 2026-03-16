@@ -34,6 +34,10 @@
           <span>Estadisticas</span>
         </button>
         <div class="scores">
+          <div class="score-item speed-item">
+            <span class="score-label">Vel.</span>
+            <span id="speed-level" class="score-value speed-value">1</span>
+          </div>
           <div class="score-item">
             <span class="score-label">Puntos</span>
             <span id="score" class="score-value">0</span>
@@ -57,7 +61,11 @@
           <p class="best-player-line" id="best-player-line">
             Mejor jugador: <span id="best-player-name">Aun sin registros</span>
           </p>
-          <p class="start-hint">Usa flechas o <kbd>W A S D</kbd>. En movil puedes deslizar en el tablero o usar botones tactiles.</p>
+          <div id="leaderboard" class="leaderboard hidden" aria-label="Top jugadores">
+            <h3 class="leaderboard-title">Top 5</h3>
+            <ol id="leaderboard-list" class="leaderboard-list"></ol>
+          </div>
+          <p class="start-hint">Flechas o <kbd>W A S D</kbd>. Movil: desliza o usa botones tactiles.</p>
           <button id="start-btn" class="btn btn-primary">Iniciar partida</button>
         </div>
       </div>
@@ -65,6 +73,7 @@
       <div id="game-over-screen" class="overlay">
         <div class="overlay-content">
           <h2>Game Over</h2>
+          <div id="new-record-badge" class="new-record-badge" aria-hidden="true">&#x2605; Nuevo Record &#x2605;</div>
           <p class="player-result"><span id="game-over-player"></span></p>
           <p class="final-score">Puntos: <span id="final-score">0</span></p>
           <div class="game-over-metrics">
@@ -72,23 +81,31 @@
             <p>Obstaculos: <span id="go-obstacles-count">0</span></p>
           </div>
           <button id="restart-btn" class="btn btn-primary">Jugar de nuevo</button>
+          <p class="go-hint">o <kbd>Esc</kbd> para ir al inicio</p>
         </div>
       </div>
 
       <div id="pause-overlay" class="overlay overlay-pause">
         <div class="overlay-content small">
           <h2>Pausado</h2>
-          <p><kbd>Espacio</kbd> para continuar</p>
+          <p><kbd>Espacio</kbd> o <kbd>&#x23F8;</kbd> para continuar</p>
         </div>
       </div>
     </div>
 
     <div class="touch-controls" aria-label="Controles tactiles">
-      <div class="touch-pad">
-        <button id="touch-up" class="btn-touch" type="button" aria-label="Mover arriba"><span class="touch-arrow">&uarr;</span></button>
-        <button id="touch-left" class="btn-touch" type="button" aria-label="Mover izquierda"><span class="touch-arrow">&larr;</span></button>
-        <button id="touch-right" class="btn-touch" type="button" aria-label="Mover derecha"><span class="touch-arrow">&rarr;</span></button>
-        <button id="touch-down" class="btn-touch" type="button" aria-label="Mover abajo"><span class="touch-arrow">&darr;</span></button>
+      <div class="touch-area">
+        <div class="touch-pad">
+          <button id="touch-up" class="btn-touch" type="button" aria-label="Mover arriba"><span class="touch-arrow">&uarr;</span></button>
+          <button id="touch-left" class="btn-touch" type="button" aria-label="Mover izquierda"><span class="touch-arrow">&larr;</span></button>
+          <button id="touch-right" class="btn-touch" type="button" aria-label="Mover derecha"><span class="touch-arrow">&rarr;</span></button>
+          <button id="touch-down" class="btn-touch" type="button" aria-label="Mover abajo"><span class="touch-arrow">&darr;</span></button>
+        </div>
+        <div class="touch-actions">
+          <button id="touch-pause" class="btn-touch-action" type="button" aria-label="Pausar">
+            <span class="touch-icon">&#x23F8;</span>
+          </button>
+        </div>
       </div>
     </div>
 

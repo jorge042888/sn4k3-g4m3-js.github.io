@@ -15,15 +15,23 @@ En escritorio:
 |-------|--------|
 | **Flechas** o **W A S D** | Mover la serpiente |
 | **Espacio** | Pausar / reanudar |
-| **Esc** | Reiniciar (durante partida) |
+| **Esc** | Volver a pantalla de inicio |
 
 En movil:
 
 - **Swipe tactil** sobre el tablero.
 - **Botones tactiles** en pantalla (`arriba`, `abajo`, `izquierda`, `derecha`).
+- **Boton de pausa** tactil junto al D-pad.
 
 ## Funcionalidades
 
+- **Velocidad adaptativa**: la serpiente acelera conforme sube el score (6 niveles: desde 120 ms/tick hasta 56 ms/tick). El nivel actual se muestra en el header.
+- **Ranking de inicio**: la pantalla de inicio muestra el Top 5 de jugadores con su mejor puntuacion.
+- **Nuevo Record**: al superar el record anterior, la pantalla de `Game Over` muestra un badge animado.
+- **Flash de muerte**: al chocar, el tablero hace un flash rojo breve antes de mostrar `Game Over`.
+- **Boton de pausa movil**: boton dedicado junto al D-pad tactil para pausar/reanudar sin teclado.
+- **Canvas nitido en Retina**: el canvas escala segun el `devicePixelRatio` del dispositivo para mayor resolucion en pantallas HiDPI.
+- **Audio precargado**: los efectos de sonido se precargan tras la primera interaccion del usuario para reducir latencia.
 - **Nombre de usuario**: al iniciar partida se solicita el nombre. Se muestra en `Game Over` y en el header como badge abreviado de 3 letras; al pasar el cursor o tocar el badge se revela el nombre completo. Por defecto: `Jugador`.
 - **Input corregido**: el campo de nombre permite escribir normalmente letras como `A`, `W`, `S` y `D` sin disparar controles del juego mientras el foco esta en edicion.
 - **Campo alineado a la UI**: el texto del input de nombre usa la paleta verde principal del juego.
