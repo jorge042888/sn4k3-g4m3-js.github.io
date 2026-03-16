@@ -55,7 +55,6 @@
   const goFoodsEatenEl = document.getElementById('go-foods-eaten');
   const goObstaclesCountEl = document.getElementById('go-obstacles-count');
   const gameLogoEl = document.getElementById('game-logo');
-  const bgVideoEl = document.getElementById('bg-video');
 
   const startScreen = document.getElementById('start-screen');
   const gameOverScreen = document.getElementById('game-over-screen');
@@ -929,22 +928,6 @@
     gameLogoEl.addEventListener('error', function () {
       gameLogoEl.style.display = 'none';
     });
-  }
-
-  if (bgVideoEl) {
-    bgVideoEl.muted = true;
-    bgVideoEl.defaultMuted = true;
-
-    const tryPlayBackgroundVideo = function () {
-      bgVideoEl.play().catch(function () {});
-    };
-
-    bgVideoEl.addEventListener('loadeddata', tryPlayBackgroundVideo);
-    document.addEventListener('visibilitychange', function () {
-      if (!document.hidden) tryPlayBackgroundVideo();
-    });
-    document.addEventListener('pointerdown', tryPlayBackgroundVideo, { passive: true });
-    tryPlayBackgroundVideo();
   }
 
   if (playerNameInput) {

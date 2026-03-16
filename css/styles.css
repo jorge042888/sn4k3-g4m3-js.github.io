@@ -45,28 +45,96 @@ body {
   padding: 0.85rem 0 1.1rem;
 }
 
-.bg-video-shell {
+.bg-media {
   position: fixed;
   inset: 0;
   z-index: 0;
   overflow: hidden;
 }
 
-.bg-video {
+.bg-photo {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  filter: blur(6px) saturate(1.08) brightness(0.58);
-  opacity: 0.8;
-  transform: scale(1.08);
+  background-image: url("../imagenes/fondo1.jpg");
+  background-position: center center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  opacity: 0.5;
+  filter: blur(7px) saturate(1.02) brightness(0.54);
+  transform: scale(1.03);
 }
 
-.bg-video-overlay {
+.bg-photo-tint {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at center, rgba(46, 213, 115, 0.16), transparent 46%),
-    linear-gradient(180deg, rgba(6, 15, 10, 0.14) 0%, rgba(5, 9, 14, 0.52) 100%);
+    radial-gradient(circle at 50% 18%, rgba(46, 213, 115, 0.16), transparent 30%),
+    linear-gradient(180deg, rgba(5, 13, 9, 0.24) 0%, rgba(6, 10, 14, 0.58) 100%);
+}
+
+.bg-atmosphere {
+  position: absolute;
+  inset: 0;
+}
+
+.bg-atmosphere::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(46, 213, 115, 0.12), transparent 28%),
+    linear-gradient(180deg, rgba(6, 15, 10, 0.08) 0%, rgba(5, 9, 14, 0.32) 100%);
+}
+
+.bg-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(20px);
+  opacity: 0.78;
+}
+
+.bg-orb-left {
+  width: 34vw;
+  height: 34vw;
+  min-width: 300px;
+  min-height: 300px;
+  left: -8vw;
+  top: 18vh;
+  background:
+    radial-gradient(circle, rgba(67, 255, 139, 0.22) 0%, rgba(46, 213, 115, 0.1) 34%, rgba(10, 14, 20, 0) 72%);
+}
+
+.bg-orb-right {
+  width: 30vw;
+  height: 30vw;
+  min-width: 260px;
+  min-height: 260px;
+  right: -6vw;
+  bottom: 12vh;
+  background:
+    radial-gradient(circle, rgba(94, 255, 170, 0.18) 0%, rgba(46, 213, 115, 0.08) 36%, rgba(10, 14, 20, 0) 74%);
+}
+
+.bg-beam {
+  position: absolute;
+  inset: auto 0 12vh;
+  height: 42vh;
+  background:
+    radial-gradient(ellipse at center, rgba(46, 213, 115, 0.08) 0%, rgba(46, 213, 115, 0.04) 22%, rgba(10, 14, 20, 0) 68%);
+  filter: blur(14px);
+}
+
+.bg-grid-glow {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(rgba(110, 255, 164, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(110, 255, 164, 0.03) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 0.9), transparent 82%);
+  opacity: 0.5;
 }
 
 .noise {
@@ -938,10 +1006,6 @@ body {
     padding: 0;
   }
 
-  .bg-video-shell {
-    display: none;
-  }
-
   .game-wrapper {
     padding-top: 1rem;
     padding-bottom: 1rem;
@@ -971,7 +1035,8 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .bg-video-shell {
-    display: none;
+  .bg-orb,
+  .bg-beam {
+    filter: blur(12px);
   }
 }
