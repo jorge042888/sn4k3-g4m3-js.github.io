@@ -76,11 +76,16 @@
           <div id="new-record-badge" class="new-record-badge" aria-hidden="true">&#x2605; Nuevo Record &#x2605;</div>
           <p class="player-result"><span id="game-over-player"></span></p>
           <p class="final-score">Puntos: <span id="final-score">0</span></p>
+          <p id="go-delta-score" class="go-delta"></p>
           <div class="game-over-metrics">
             <p>Comiste: <span id="go-foods-eaten">0</span></p>
             <p>Obstaculos: <span id="go-obstacles-count">0</span></p>
+            <p>Tiempo: <span id="go-time-played">0s</span></p>
           </div>
-          <button id="restart-btn" class="btn btn-primary">Jugar de nuevo</button>
+          <div class="go-buttons">
+            <button id="restart-btn" class="btn btn-primary">Jugar de nuevo</button>
+            <button id="share-btn" class="btn btn-share" type="button">Compartir</button>
+          </div>
           <p class="go-hint">o <kbd>Esc</kbd> para ir al inicio</p>
         </div>
       </div>
@@ -170,6 +175,8 @@
             <li>Mueve la serpiente con flechas, <kbd>W A S D</kbd>, botones tactiles o swipe en moviles.</li>
             <li>Come los circulos rojos para sumar puntos y alargar la serpiente.</li>
             <li>A veces aparece comida verde con indicador <strong>x1, x2 o x3</strong>: reduce la serpiente.</li>
+            <li>Come varias rojas seguidas rapido para activar un <strong>COMBO</strong> y multiplicar puntos (hasta x4).</li>
+            <li>Aparecen <strong>power-ups</strong> de colores: <strong style="color:#38CDEB">ESC</strong> absorbe un golpe, <strong style="color:#f0c040">LEN</strong> reduce velocidad 7s, <strong style="color:#b388ff">2X</strong> dobla puntos 7s.</li>
             <li>Evita chocar contra tu cuerpo.</li>
             <li>Cada comida roja genera un bloque aleatorio; chocar con el bloque termina la partida.</li>
             <li>Pulsa <kbd>Espacio</kbd> para pausar/reanudar y <kbd>Esc</kbd> para reiniciar.</li>

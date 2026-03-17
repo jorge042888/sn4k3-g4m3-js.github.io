@@ -88,6 +88,16 @@ body {
     linear-gradient(180deg, rgba(6, 15, 10, 0.08) 0%, rgba(5, 9, 14, 0.32) 100%);
 }
 
+@keyframes orbFloat {
+  0%, 100% { transform: translateY(0)    scale(1);    }
+  50%       { transform: translateY(-20px) scale(1.05); }
+}
+
+@keyframes orbFloatR {
+  0%, 100% { transform: translateY(0)   scale(1);    }
+  50%       { transform: translateY(16px) scale(0.96); }
+}
+
 .bg-orb {
   position: absolute;
   border-radius: 50%;
@@ -104,6 +114,7 @@ body {
   top: 18vh;
   background:
     radial-gradient(circle, rgba(67, 255, 139, 0.22) 0%, rgba(46, 213, 115, 0.1) 34%, rgba(10, 14, 20, 0) 72%);
+  animation: orbFloat 9s ease-in-out infinite;
 }
 
 .bg-orb-right {
@@ -115,6 +126,7 @@ body {
   bottom: 12vh;
   background:
     radial-gradient(circle, rgba(94, 255, 170, 0.18) 0%, rgba(46, 213, 115, 0.08) 36%, rgba(10, 14, 20, 0) 74%);
+  animation: orbFloatR 11s ease-in-out infinite;
 }
 
 .bg-beam {
@@ -527,6 +539,61 @@ body {
   margin-top: 0.75rem;
   font-size: 0.8rem;
   color: var(--text-muted);
+}
+
+/* ===== Go buttons row ===== */
+.go-buttons {
+  display: flex;
+  gap: 0.65rem;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+}
+
+/* ===== Delta score (game over) ===== */
+.go-delta {
+  font-size: 0.88rem;
+  font-weight: 700;
+  margin-bottom: 0.6rem !important;
+  margin-top: -0.4rem;
+  min-height: 1.2em;
+}
+
+.go-delta.positive { color: var(--accent); }
+.go-delta.negative { color: var(--danger); }
+
+/* ===== Share button ===== */
+.btn-share {
+  font-family: var(--font);
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 0.75rem 1.25rem;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-share:hover {
+  background: rgba(255, 255, 255, 0.13);
+  box-shadow: 0 0 14px rgba(255, 255, 255, 0.08);
+}
+
+/* ===== Screen shake ===== */
+@keyframes shake {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  12%  { transform: translateX(-7px) rotate(-0.8deg); }
+  25%  { transform: translateX(6px)  rotate(0.8deg);  }
+  37%  { transform: translateX(-5px) rotate(-0.5deg); }
+  50%  { transform: translateX(4px)  rotate(0.5deg);  }
+  62%  { transform: translateX(-3px); }
+  75%  { transform: translateX(2px);  }
+  87%  { transform: translateX(-1px); }
+}
+
+.canvas-container.shake {
+  animation: shake 0.52s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
 
 .go-hint kbd {
@@ -1226,5 +1293,10 @@ body {
   .bg-orb,
   .bg-beam {
     filter: blur(12px);
+    animation: none;
+  }
+
+  .canvas-container.shake {
+    animation: none;
   }
 }

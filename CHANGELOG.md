@@ -95,6 +95,21 @@ Todos los cambios notables del proyecto se documentan en este archivo.
 - Se reemplazo el intento de fondo en video por una imagen estatica `imagenes/fondo1.jpg` con tratamiento visual tenue para mantener legibilidad.
 - `README.md`, `CHANGELOG.md` y `SECURITY.md` se actualizaron para reflejar esta version activa.
 
+### 14. Power-ups, combo, mejoras visuales y dinamicas
+
+- **Power-ups** en tablero: tras cada comida roja hay 20% de probabilidad de aparecer un power-up durante 6 s. Tres tipos: `ESCUDO` (cyan, absorbe 1 golpe), `LENTO` (amarillo, +55% tick durante 7 s), `2X PTS` (morado, doble puntos durante 7 s). Los power-ups parpadean en los ultimos 2 s de vida y desaparecen solos si no se recogen. Los efectos activos se muestran como barras de progreso en la esquina superior derecha del canvas.
+- **Sistema de combo**: comer multiples comidas rojas en menos de 2,5 s acumula un multiplicador (hasta x4). Se muestra el indicador `COMBO xN` en el canvas. El combo se reinicia al comer comida verde o al expirar la ventana.
+- **Texto flotante de puntos**: al comer aparece un `+N` animado sobre la comida. El color es blanco (normal), dorado (combo activo) o morado (2X PTS activo).
+- **Banner de subida de nivel**: al superar cada umbral de velocidad aparece un banner `NIVEL N` animado centrado en el tablero (fade-in + scale + fade-out en 1,6 s).
+- **Screen shake**: al morir el canvas-container aplica una animacion CSS de vibrado de 520 ms.
+- **Serpiente con gradiente de cola**: los segmentos reducen radio y alpha hacia la cola para dar sensacion de profundidad.
+- **Comida animada**: la comida roja y verde pulsan suavemente usando `Math.sin(now / 280)`.
+- **Glow de escudo activo**: mientras `ESCUDO` esta activo, la cabeza de la serpiente muestra un anillo cyan pulsante.
+- **Game Over ampliado**: se agrego tiempo de partida (`go-time-played`), delta vs record (`go-delta-score` con color verde/rojo) y boton `Compartir` (usa `navigator.share` o copia al portapapeles).
+- **Power-up en isCellFree**: la generacion de obstaculos, comida y power-ups ahora evita superponerse entre si.
+- **Orbs de fondo animados**: `bg-orb-left` y `bg-orb-right` tienen animacion CSS `orbFloat` / `orbFloatR` con ciclos de 9 y 11 s respectivamente. Deshabilitada con `prefers-reduced-motion`.
+- **Reglas actualizadas**: el modal de reglas documenta el combo y los power-ups.
+
 ---
 
 Para mas detalle sobre seguridad y datos, ver [SECURITY.md](SECURITY.md).
