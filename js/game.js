@@ -13,11 +13,11 @@
   // Velocidad adaptativa: sube un nivel cada 5 comidas rojas (50 pts)
   const SPEED_TIERS = [
     { minScore: 0,   tickMs: 120 },
-    { minScore: 50,  tickMs: 108 },
-    { minScore: 100, tickMs: 95  },
-    { minScore: 150, tickMs: 80  },
-    { minScore: 200, tickMs: 68  },
-    { minScore: 250, tickMs: 56  },
+    { minScore: 50,  tickMs: 110 },
+    { minScore: 100, tickMs: 98  },
+    { minScore: 150, tickMs: 85  },
+    { minScore: 200, tickMs: 74  },
+    { minScore: 250, tickMs: 64  },
   ];
 
   const FOOD_SHRINK_CHANCE         = 0.2;
@@ -44,11 +44,14 @@
   const GAME_STATS_KEY          = 'snake-game-stats';
   const MAX_STORED_GAMES        = 100;
   const OBSTACLE_CELLS_PER_FOOD = 1;
+  const OBSTACLE_MAX            = 16;  // limite de obstaculos en tablero
   const SOUND_FILES = {
     normalFood: 'audio/comida_roja.mp3',
     shrinkFood: 'audio/comida_verde.mp3',
     gameOver:   'audio/game_over.mp3',
     pause:      'audio/pause.mp3',
+    shield:     'audio/escudo.mp3',
+    levelUp:    'audio/subir_nivel.mp3',
   };
 
   const Direction = {
@@ -215,6 +218,7 @@
     if (speedLevelEl) speedLevelEl.textContent = String(newLevel);
     if (isRunning && newLevel > lastSpeedLevel) {
       levelUpBanner = { level: newLevel, startTime: performance.now() };
+      playSoundEffect('levelUp');
     }
     lastSpeedLevel = newLevel;
   }
@@ -299,6 +303,7 @@
   }
 
   function spawnObstacle() {
+    if (obstacles.length >= OBSTACLE_MAX) return 0;
     let created = 0;
     for (let n = 0; n < OBSTACLE_CELLS_PER_FOOD; n++) {
       let attempts = 0;
@@ -346,6 +351,7 @@
     const now = performance.now();
     if (type === 'shield') {
       activeShield = true;
+      playSoundEffect('shield');
     } else if (type === 'slow') {
       slowEndTime = now + POWERUP_DURATION_MS;
     } else if (type === 'double') {
@@ -544,7 +550,7 @@
   // ----- Render -----
 
   function drawGrid() {
-    ctx.strokeStyle = 'rgba(56, 205, 235, 0.06)';
+    ctx.strokeStyle = 'rgba(46, 213, 115, 0.07)';
     ctx.lineWidth = 1;
     for (let i = 0; i <= GRID_SIZE; i++) {
       const p = i * CELL_SIZE;
@@ -567,15 +573,15 @@
       const cy = y + CELL_SIZE / 2;
 
       if (isHead && activeShield) {
-        ctx.shadowColor = 'rgba(56, 205, 235, 1)';
+        ctx.shadowColor = 'rgba(192, 215, 235, 1)';
         ctx.shadowBlur  = 20;
       } else if (isHead) {
-        ctx.shadowColor = 'rgba(56, 205, 235, 0.6)';
-        ctx.shadowBlur  = 12;
+        ctx.shadowColor = 'rgba(46, 213, 115, 0.7)';
+        ctx.shadowBlur  = 14;
       }
 
       const alpha    = 0.3 + 0.7 * t;
-      ctx.fillStyle  = isHead ? '#5dd4f0' : 'rgba(56, 205, 235, ' + alpha + ')';
+      ctx.fillStyle  = isHead ? '#4ade80' : 'rgba(46, 213, 115, ' + alpha + ')';
       ctx.beginPath();
       ctx.arc(cx, cy, radius, 0, Math.PI * 2);
       ctx.fill();
@@ -588,10 +594,16 @@
         ctx.fill();
 
         if (activeShield) {
-          ctx.strokeStyle = 'rgba(56, 205, 235, 0.9)';
-          ctx.lineWidth   = 2.5;
-          ctx.shadowColor = 'rgba(56, 205, 235, 0.8)';
-          ctx.shadowBlur  = 12;
+          // Anillo metalico del escudo (plata/acero)
+          const shieldGrad = ctx.createLinearGradient(cx - CELL_SIZE / 2, cy, cx + CELL_SIZE / 2, cy);
+          shieldGrad.addColorStop(0,    'rgba(180, 200, 220, 0.7)');
+          shieldGrad.addColorStop(0.35, 'rgba(230, 245, 255, 1)');
+          shieldGrad.addColorStop(0.65, 'rgba(200, 218, 235, 0.9)');
+          shieldGrad.addColorStop(1,    'rgba(160, 185, 210, 0.7)');
+          ctx.strokeStyle = shieldGrad;
+          ctx.lineWidth   = 3;
+          ctx.shadowColor = 'rgba(220, 235, 255, 0.9)';
+          ctx.shadowBlur  = 14;
           ctx.beginPath();
           ctx.arc(cx, cy, CELL_SIZE / 2 + 3, 0, Math.PI * 2);
           ctx.stroke();
@@ -653,16 +665,16 @@
 
     if (food.type === 'shrink') {
       const grad = ctx.createRadialGradient(cx - 3, cy - 4, 2, cx, cy, radius + 2);
-      grad.addColorStop(0, '#8cff95');
-      grad.addColorStop(1, '#22a352');
-      ctx.shadowColor = 'rgba(106, 255, 143, 0.6)';
+      grad.addColorStop(0, '#bae6fd');
+      grad.addColorStop(1, '#2563eb');
+      ctx.shadowColor = 'rgba(125, 211, 252, 0.65)';
       ctx.shadowBlur  = 14;
       ctx.fillStyle   = grad;
       ctx.beginPath();
       ctx.arc(cx, cy, radius, 0, Math.PI * 2);
       ctx.fill();
       ctx.shadowBlur   = 0;
-      ctx.fillStyle    = '#072314';
+      ctx.fillStyle    = '#0c1a3a';
       ctx.font         = 'bold 10px Outfit, sans-serif';
       ctx.textAlign    = 'center';
       ctx.textBaseline = 'middle';
@@ -695,16 +707,27 @@
     const r      = (CELL_SIZE / 2 - 1) * pulse;
 
     const colors = {
-      shield: { fill: '#38CDEB', glow: 'rgba(56, 205, 235, 0.7)',  label: 'ESC' },
-      slow:   { fill: '#f0c040', glow: 'rgba(240, 192, 64, 0.7)',  label: 'LEN' },
-      double: { fill: '#b388ff', glow: 'rgba(179, 136, 255, 0.7)', label: '2X'  },
+      shield: { fill: null,      glow: 'rgba(210, 230, 255, 0.8)',  label: 'ESC' },
+      slow:   { fill: '#f472b6', glow: 'rgba(244, 114, 182, 0.7)', label: 'LEN' },
+      double: { fill: '#60a5fa', glow: 'rgba(96,  165, 250, 0.7)', label: '2X'  },
     };
-    const c = colors[powerUp.type] || colors.shield;
+    const c = colors[powerUp.type] || colors.slow;
 
     ctx.save();
     ctx.shadowColor = c.glow;
     ctx.shadowBlur  = 18;
-    ctx.fillStyle   = c.fill;
+
+    if (powerUp.type === 'shield') {
+      // Degradado metalico plata/acero
+      const mg = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.35, r * 0.05, cx, cy, r);
+      mg.addColorStop(0,    '#ffffff');
+      mg.addColorStop(0.35, '#d0e4f4');
+      mg.addColorStop(0.7,  '#8fafc8');
+      mg.addColorStop(1,    '#4d6e8a');
+      ctx.fillStyle = mg;
+    } else {
+      ctx.fillStyle = c.fill;
+    }
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
     ctx.fill();
@@ -720,13 +743,13 @@
   function drawPowerUpIndicators(now) {
     const indicators = [];
     if (activeShield) {
-      indicators.push({ label: 'ESCUDO', color: '#38CDEB', progress: 1 });
+      indicators.push({ label: 'ESCUDO', color: '#c8dff0', progress: 1 });
     }
     if (now < slowEndTime) {
-      indicators.push({ label: 'LENTO',  color: '#f0c040', progress: (slowEndTime  - now) / POWERUP_DURATION_MS });
+      indicators.push({ label: 'LENTO',  color: '#f472b6', progress: (slowEndTime  - now) / POWERUP_DURATION_MS });
     }
     if (now < doubleEndTime) {
-      indicators.push({ label: '2X PTS', color: '#b388ff', progress: (doubleEndTime - now) / POWERUP_DURATION_MS });
+      indicators.push({ label: '2X PTS', color: '#60a5fa', progress: (doubleEndTime - now) / POWERUP_DURATION_MS });
     }
     if (!indicators.length) return;
 
@@ -781,9 +804,9 @@
       if (elapsed >= COLLECT_EFFECT_DURATION_MS) { toRemove.push(i); return; }
       const t = elapsed / COLLECT_EFFECT_DURATION_MS;
 
-      ctx.strokeStyle = 'rgba(56, 205, 235, ' + Math.max(0, (1 - t) * 0.9) + ')';
+      ctx.strokeStyle = 'rgba(46, 213, 115, ' + Math.max(0, (1 - t) * 0.9) + ')';
       ctx.lineWidth   = 3;
-      ctx.shadowColor = 'rgba(56, 205, 235, 0.9)';
+      ctx.shadowColor = 'rgba(46, 213, 115, 0.9)';
       ctx.shadowBlur  = 14;
       ctx.beginPath();
       ctx.arc(eff.x, eff.y, 8 + t * 65, 0, Math.PI * 2);
@@ -801,8 +824,8 @@
         const dist  = t * 42;
         ctx.fillStyle = p % 3 === 0
           ? 'rgba(255, 255, 255, ' + Math.max(0, 1 - t * 1.1) + ')'
-          : 'rgba(56, 205, 235, '  + Math.max(0, 1 - t * 1.1) + ')';
-        ctx.shadowColor = 'rgba(56, 205, 235, 0.8)';
+          : 'rgba(46, 213, 115, '  + Math.max(0, 1 - t * 1.1) + ')';
+        ctx.shadowColor = 'rgba(46, 213, 115, 0.8)';
         ctx.shadowBlur  = 6;
         ctx.beginPath();
         ctx.arc(eff.x + Math.cos(angle) * dist, eff.y + Math.sin(angle) * dist,
@@ -910,18 +933,18 @@
     const pw = tw + 44;
 
     ctx.fillStyle   = 'rgba(10, 18, 26, 0.82)';
-    ctx.shadowColor = 'rgba(56, 205, 235, 0.7)';
+    ctx.shadowColor = 'rgba(46, 213, 115, 0.7)';
     ctx.shadowBlur  = 24;
     roundRect(ctx, -pw / 2, -ph / 2, pw, ph, 14);
     ctx.fill();
 
-    ctx.strokeStyle = 'rgba(56, 205, 235, 0.9)';
+    ctx.strokeStyle = 'rgba(46, 213, 115, 0.9)';
     ctx.lineWidth   = 2;
     ctx.stroke();
     ctx.shadowBlur  = 0;
 
     ctx.fillStyle   = '#ffffff';
-    ctx.shadowColor = 'rgba(56, 205, 235, 0.9)';
+    ctx.shadowColor = 'rgba(46, 213, 115, 0.9)';
     ctx.shadowBlur  = 12;
     ctx.fillText(text, 0, 0);
     ctx.restore();
@@ -985,7 +1008,7 @@
       removePowerUpFromBoard();
       activatePowerUp(type);
       const labels = { shield: '+ESCUDO', slow: '+LENTO', double: '+2X PTS' };
-      const colors = { shield: '#38CDEB', slow: '#f0c040', double: '#b388ff' };
+      const colors = { shield: '#c8dff0', slow: '#f472b6', double: '#60a5fa' };
       spawnFloatingText(
         newHead.x * CELL_SIZE + CELL_SIZE / 2,
         newHead.y * CELL_SIZE + CELL_SIZE / 2,
@@ -1024,7 +1047,7 @@
         trySpawnPowerUp();
 
         const textColor = pointsMulti > 1
-          ? '#b388ff'
+          ? '#60a5fa'
           : (comboMulti > 1 ? '#f0c040' : '#ffffff');
         spawnFloatingText(
           food.x * CELL_SIZE + CELL_SIZE / 2,
